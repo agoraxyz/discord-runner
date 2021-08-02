@@ -7,7 +7,7 @@ const createDevLogger = () => {
     (log) => `${log.timestamp} ${log.level}: ${log.stack || log.message}`
   );
   return createLogger({
-    level: "debug",
+    level: "verbose",
     format: combine(
       colorize(),
       timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
