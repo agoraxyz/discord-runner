@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import { DiscordAPIError, GuildMember, MessageEmbed, User } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
@@ -57,6 +58,12 @@ const logBackendError = (error) => {
   }
 };
 
+const logAxiosResponse = (res: AxiosResponse<any>) => {
+  logger.verbose(
+    `${res.status} ${res.statusText} data:${JSON.stringify(res.data)}`
+  );
+};
+
 const handleJoinCode = async (joinCode: string, author: User) => {
   userJoined(joinCode, author.id, true).then((ok) => {
     const embed = ok
@@ -89,4 +96,5 @@ export {
   logBackendError,
   handleJoinCode,
   getRequestJoinCodeEmbed,
+  logAxiosResponse,
 };
