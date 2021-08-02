@@ -1,6 +1,7 @@
 import axios from "axios";
 import config from "./config";
-import { logBackendError } from "./utils/utils";
+import logger from "./utils/logger";
+import { logAxiosResponse, logBackendError } from "./utils/utils";
 
 const API_BASE_URL = config.backendUrl;
 const PLATFORM = "DISCORD";
@@ -10,15 +11,19 @@ const userJoined = async (
   platformUserId: string,
   isJoinCode: boolean
 ): Promise<boolean> => {
+  logger.verbose(`userJoined: refId=${refId}`);
   try {
-    await axios.post(`${API_BASE_URL}/user/joinedPlatform`, {
+    const response = await axios.post(`${API_BASE_URL}/user/joinedPlatform`, {
       refId,
       platform: PLATFORM,
       platformUserId,
       isJoinCode,
     });
+    logger.verbose(`joinedPlatform result:`);
+    logAxiosResponse(response);
     return true;
   } catch (error) {
+    logger.verbose("joinedPlatform error");
     logBackendError(error);
     return false;
   }

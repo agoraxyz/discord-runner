@@ -13,6 +13,7 @@ const manageRoles = async (
   params: ManageRolesParams,
   isUpgrade: boolean
 ): Promise<UserResult> => {
+  logger.verbose(`manageRoles params: ${JSON.stringify(params)}, ${isUpgrade}`);
   const guild = await Main.Client.guilds.fetch(params.guildId);
 
   const member = await guild.members.fetch(params.userId);

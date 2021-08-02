@@ -49,8 +49,14 @@ abstract class Events {
         )
       ) {
         if (message.content.match(/^\d{4}$/)) {
+          logger.verbose(
+            `join code (${message.content}) recieved from ${message.author.username}#${message.author.discriminator} ${message.author.id}`
+          );
           handleJoinCode(message.content, message.author);
         } else {
+          logger.verbose(
+            `unkown requst: ${message.author.username}#${message.author.discriminator}: ${message.content}`
+          );
           const embed = new MessageEmbed({
             title: "I'm sorry, but I couldn't interpret your request.",
             color: config.embedColor,
@@ -89,6 +95,12 @@ abstract class Events {
         const usedInvites = previousInvites.filter(
           (i) => !currentBotInvites.has(i)
         );
+
+        logger.verbose(`previousInvites: ${previousInvites}`);
+        logger.verbose(
+          `currentBotInvites: ${currentBotInvites.map((invite) => invite.code)}`
+        );
+        logger.verbose(`usedInvites: ${usedInvites}`);
 
         if (usedInvites && usedInvites.length === 1) {
           userJoined(usedInvites[0], member.user.id, false);
