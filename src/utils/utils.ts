@@ -1,8 +1,6 @@
 import { AxiosResponse } from "axios";
-import { DiscordAPIError, GuildMember, MessageEmbed, User } from "discord.js";
+import { DiscordAPIError, GuildMember } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
-import config from "../config";
-import { userJoined } from "../service";
 import logger from "./logger";
 
 const getUserResult = (member: GuildMember): UserResult => ({
@@ -64,37 +62,30 @@ const logAxiosResponse = (res: AxiosResponse<any>) => {
   );
 };
 
-const handleJoinCode = async (joinCode: string, author: User) => {
-  userJoined(joinCode, author.id, true).then((ok) => {
-    const embed = ok
-      ? new MessageEmbed({
-          title: "You have successfully joined.",
-          color: "44ef44",
-        })
-      : new MessageEmbed({
-          title: "Join failed.",
-          description: "Wrong join code.",
-          color: "ef4444",
-        });
-    author.send(embed).catch(logger.error);
-  });
-};
+// const handleJoinCode = async (joinCode: string, author: User) => {
+//   userJoined(joinCode, author.id, true).then((ok) => {
+//     const embed = ok
+//       ? new MessageEmbed({
+//           title: "You have successfully joined.",
+//           color: "44ef44",
+//         })
+//       : new MessageEmbed({
+//           title: "Join failed.",
+//           description: "Wrong join code.",
+//           color: "ef4444",
+//         });
+//     author.send(embed).catch(logger.error);
+//   });
+// };
 
-const getRequestJoinCodeEmbed = () =>
-  new MessageEmbed({
-    title:
-      "Please enter the provided 4-digit join code to connect your Discord account to Agora Space.",
-    color: config.embedColor,
-    image: {
-      url: "https://cdn.discordapp.com/attachments/701319775925829693/861979264660668446/Slice_1.png",
-    },
-  });
+// const getRequestJoinCodeEmbed = () =>
+//   new MessageEmbed({
+//     title:
+//       "Please enter the provided 4-digit join code to connect your Discord account to Agora Space.",
+//     color: config.embedColor,
+//     image: {
+//       url: "https://cdn.discordapp.com/attachments/701319775925829693/861979264660668446/Slice_1.png",
+//     },
+//   });
 
-export {
-  getUserResult,
-  getErrorResult,
-  logBackendError,
-  handleJoinCode,
-  getRequestJoinCodeEmbed,
-  logAxiosResponse,
-};
+export { getUserResult, getErrorResult, logBackendError, logAxiosResponse };
