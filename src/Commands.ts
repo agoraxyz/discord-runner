@@ -7,7 +7,7 @@ import logger from "./utils/logger";
 
 @Discord(config.prefix)
 abstract class Commands {
-  static commands = ["ping" /* , "join" */];
+  static commands = ["ping"];
 
   @Command("ping")
   @Guard(NotABot)
