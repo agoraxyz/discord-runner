@@ -4,11 +4,10 @@ import config from "./config";
 import NotABot from "./Guards/NotABot";
 import Main from "./Main";
 import logger from "./utils/logger";
-import { handleJoinCode } from "./utils/utils";
 
 @Discord(config.prefix)
 abstract class Commands {
-  static commands = ["ping", "join"];
+  static commands = ["ping" /* , "join" */];
 
   @Command("ping")
   @Guard(NotABot)
@@ -22,15 +21,15 @@ abstract class Commands {
       .catch(logger.error);
   }
 
-  @Command("join :joinCode")
-  @Guard(NotABot)
-  join(command: CommandMessage): void {
-    const { joinCode } = command.args;
-    handleJoinCode(joinCode, command.author);
-    if (command.channel.type !== "dm") {
-      command.delete().catch(logger.error);
-    }
-  }
+  // @Command("join :joinCode")
+  // @Guard(NotABot)
+  // join(command: CommandMessage): void {
+  //   const { joinCode } = command.args;
+  //   handleJoinCode(joinCode, command.author);
+  //   if (command.channel.type !== "dm") {
+  //     command.delete().catch(logger.error);
+  //   }
+  // }
 }
 
 export default Commands;
