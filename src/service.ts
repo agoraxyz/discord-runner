@@ -7,17 +7,15 @@ const API_BASE_URL = config.backendUrl;
 const PLATFORM = "DISCORD";
 
 const userJoined = async (
-  refId: string,
   platformUserId: string,
-  isJoinCode: boolean
+  serverId: string
 ): Promise<boolean> => {
-  logger.verbose(`userJoined: refId=${refId}`);
+  logger.verbose(`userJoined params: ${platformUserId}, ${serverId}`);
   try {
     const response = await axios.post(`${API_BASE_URL}/user/joinedPlatform`, {
-      refId,
       platform: PLATFORM,
       platformUserId,
-      isJoinCode,
+      serverId,
     });
     logger.verbose(`joinedPlatform result:`);
     logAxiosResponse(response);
