@@ -10,6 +10,8 @@ class Main {
     return this._client;
   }
 
+  public static inviteCodeCache: Map<string, string>;
+
   static start(): void {
     api();
 
@@ -19,6 +21,8 @@ class Main {
       `${__dirname}/*.ts`,
       `${__dirname}/*.js`
     );
+
+    this.inviteCodeCache = new Map();
   }
 }
 

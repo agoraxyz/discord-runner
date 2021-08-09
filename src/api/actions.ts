@@ -53,9 +53,20 @@ const manageRoles = async (
 };
 
 const generateInvite = async (guildId: string): Promise<InviteResult> => {
-  const guild = await Main.Client.guilds.fetch(guildId);
+  logger.verbose(`generateInvite params: ${guildId}`);
+  const cachedInviteCode = Main.inviteCodeCache.get(guildId);
+  logger.verbose(`cached invite code: ${cachedInviteCode}`);
+  if (cachedInviteCode) {
+    return {
+      code: cachedInviteCode,
+    };
+  }
 
+  const guild = await Main.Client.guilds.fetch(guildId);
   const invite = await guild.systemChannel.createInvite({ maxAge: 0 });
+  logger.verbose(`generated invite code: ${invite.code}`);
+
+  Main.inviteCodeCache.set(guildId, invite.code);
 
   return {
     code: invite.code,
