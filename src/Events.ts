@@ -2,6 +2,7 @@
 import { Description, Guard, On } from "@typeit/discord";
 import {
   GuildMember,
+  Invite,
   Message,
   MessageEmbed,
   PartialGuildMember,
@@ -10,6 +11,7 @@ import Commands from "./Commands";
 import config from "./config";
 import IsAPrivateMessage from "./Guards/IsAPrivateMessage";
 import NotABot from "./Guards/NotABot";
+import Main from "./Main";
 import { userJoined, userRemoved } from "./service";
 import logger from "./utils/logger";
 
@@ -54,6 +56,18 @@ abstract class Events {
   onGuildMemberRemove(members: [GuildMember | PartialGuildMember]): void {
     members.forEach((member) => {
       userRemoved(member.user.id, member.guild.id);
+    });
+  }
+
+  @On("inviteDelete")
+  onInviteDelete(invite: [Invite]): void {
+    const { guild } = invite[0];
+    logger.verbose(`onInviteDelete guild: ${guild.name}`);
+    guild.systemChannel.createInvite({ maxAge: 0 }).then((newInvite) => {
+      Main.inviteCodeCache.set(guild.id, newInvite.code);
+      logger.verbose(
+        `invite code cache updated: ${guild.id}, ${newInvite.code}`
+      );
     });
   }
 }
