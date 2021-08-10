@@ -51,6 +51,8 @@ const logBackendError = (error) => {
     error.response?.data?.errors[0]?.msg
   ) {
     logger.error(error.response.data.errors[0].msg);
+  } else if (error.response?.data) {
+    logger.error(error.response.data);
   } else {
     logger.error(error);
   }
