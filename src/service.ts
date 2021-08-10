@@ -1,4 +1,5 @@
 import axios from "axios";
+import { LevelInfo } from "./api/types";
 import config from "./config";
 import logger from "./utils/logger";
 import { logAxiosResponse, logBackendError } from "./utils/utils";
@@ -38,4 +39,21 @@ const userRemoved = (dcUserId: string, serverId: string): void => {
     .catch(logBackendError);
 };
 
-export { userJoined, userRemoved };
+const statusUpdate = async (
+  discordId: string
+): Promise<LevelInfo[] | undefined> => {
+  logger.verbose(`statusUpdate params: ${discordId}`);
+  try {
+    const response = await axios.post(`${API_BASE_URL}/user/statusUpdate`, {
+      discordId,
+    });
+    logAxiosResponse(response);
+    return response.data;
+  } catch (error) {
+    logger.verbose("statusUpdate error");
+    logBackendError(error);
+    return undefined;
+  }
+};
+
+export { userJoined, userRemoved, statusUpdate };
