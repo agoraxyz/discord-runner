@@ -29,10 +29,16 @@ class ActionError extends Error {
   }
 }
 
+type LevelInfo = {
+  name: string;
+  levels: string[];
+};
+
 export {
   ManageRolesParams,
   UserResult,
   InviteResult,
   ErrorResult,
   ActionError,
+  LevelInfo,
 };
