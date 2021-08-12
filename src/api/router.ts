@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { body } from "express-validator";
 import controller from "./controller";
 import validators from "./validators";
 
@@ -43,6 +44,13 @@ const createRouter = () => {
     validators.paramDiscordId("guildId"),
     validators.paramDiscordId("userId"),
     controller.removeUser
+  );
+
+  router.post(
+    "/role",
+    validators.bodyDiscordId("serverId"),
+    body("roleName").trim().isLength({ min: 1 }),
+    controller.createRole
   );
 
   return router;

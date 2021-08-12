@@ -3,6 +3,7 @@ import Main from "../Main";
 import logger from "../utils/logger";
 import {
   ActionError,
+  CreateRoleResult,
   InviteResult,
   ManageRolesParams,
   UserResult,
@@ -92,4 +93,18 @@ const removeUser = async (guildId: string, userId: string): Promise<void> => {
   await member.kick();
 };
 
-export { manageRoles, generateInvite, isMember, removeUser };
+const createRole = async (
+  guildId: string,
+  roleName: string
+): Promise<CreateRoleResult> => {
+  const guild = await Main.Client.guilds.fetch(guildId);
+
+  const role = await guild.roles.create({
+    data: { name: roleName, hoist: true },
+    reason: "Created by Medousa for a community level.",
+  });
+
+  return { id: role.id };
+};
+
+export { manageRoles, generateInvite, isMember, removeUser, createRole };
