@@ -53,6 +53,12 @@ const createRouter = () => {
     controller.createRole
   );
 
+  router.get(
+    "/isIn/:guildId",
+    validators.paramDiscordId("guildId"),
+    controller.isIn
+  );
+
   return router;
 };
 

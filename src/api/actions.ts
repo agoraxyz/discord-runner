@@ -109,4 +109,21 @@ const createRole = async (
   return { id: role.id };
 };
 
-export { manageRoles, generateInvite, isMember, removeUser, createRole };
+const isIn = async (guildId: string): Promise<boolean> => {
+  logger.verbose(`isIn params: ${guildId}`);
+
+  try {
+    await Main.Client.guilds.fetch(guildId);
+    logger.verbose("isIn: true");
+    return true;
+  } catch (error) {
+    if (error.code === 50001) {
+      logger.verbose("isIn: false");
+      return false;
+    }
+    logger.verbose("isIn: error");
+    throw error;
+  }
+};
+
+export { manageRoles, generateInvite, isMember, removeUser, createRole, isIn };
