@@ -97,12 +97,14 @@ const createRole = async (
   guildId: string,
   roleName: string
 ): Promise<CreateRoleResult> => {
+  logger.verbose(`createRole params: ${guildId}, ${roleName}`);
   const guild = await Main.Client.guilds.fetch(guildId);
 
   const role = await guild.roles.create({
     data: { name: roleName, hoist: true },
     reason: "Created by Medousa for a community level.",
   });
+  logger.verbose(`role created: ${role.id}`);
 
   return { id: role.id };
 };
