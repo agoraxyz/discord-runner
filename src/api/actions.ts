@@ -102,7 +102,7 @@ const createRole = async (
 
   const role = await guild.roles.create({
     data: { name: roleName, hoist: true },
-    reason: "Created by Medousa for a community level.",
+    reason: `Created by ${Main.Client.user.username} for an Agora Space community level.`,
   });
   logger.verbose(`role created: ${role.id}`);
 
