@@ -29,10 +29,15 @@ class ActionError extends Error {
   }
 }
 
+type CreateRoleResult = {
+  id: string;
+};
+
 export {
   ManageRolesParams,
   UserResult,
   InviteResult,
   ErrorResult,
   ActionError,
+  CreateRoleResult,
 };
