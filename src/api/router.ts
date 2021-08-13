@@ -59,6 +59,12 @@ const createRouter = () => {
     controller.isIn
   );
 
+  router.get(
+    "/channels/:guildId",
+    validators.paramDiscordId("guildId"),
+    controller.channels
+  );
+
   return router;
 };
 
