@@ -1,4 +1,4 @@
-import { Collection, GuildMember, Permissions, Role } from "discord.js";
+import { Collection, Guild, GuildMember, Permissions, Role } from "discord.js";
 import Main from "../Main";
 import logger from "../utils/logger";
 import {
@@ -127,8 +127,21 @@ const isIn = async (guildId: string): Promise<boolean> => {
   }
 };
 
-const listChannels = async (guildId: string): Promise<DiscordChannel[]> => {
-  const guild = await Main.Client.guilds.fetch(guildId);
+const listChannels = async (
+  guildId: string
+): Promise<DiscordChannel[] | undefined> => {
+  logger.verbose(`listChannels params: ${guildId}`);
+  let guild: Guild;
+  try {
+    guild = await Main.Client.guilds.fetch(guildId);
+  } catch (error) {
+    if (error.code === 50001) {
+      logger.verbose(`listChannels: guild not found`);
+      throw new ActionError("Guild not found.", [guildId]);
+    }
+    throw error;
+  }
+
   const channels = guild.channels.cache
     .filter(
       (c) =>
@@ -138,6 +151,8 @@ const listChannels = async (guildId: string): Promise<DiscordChannel[]> => {
           .has(Permissions.FLAGS.VIEW_CHANNEL)
     )
     .map((c) => ({ id: c.id, name: c.name }));
+
+  logger.verbose(`listChannels result: ${channels}`);
   return channels;
 };
 
