@@ -150,7 +150,11 @@ const listChannels = async (
           .permissionsFor(guild.roles.everyone)
           .has(Permissions.FLAGS.VIEW_CHANNEL)
     )
-    .map((c) => ({ id: c.id, name: c.name }));
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      category: c.parent.name.toUpperCase(),
+    }));
 
   logger.verbose(`listChannels result: ${channels}`);
   return channels;
