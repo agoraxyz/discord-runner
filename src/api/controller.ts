@@ -6,6 +6,7 @@ import {
   generateInvite,
   isIn,
   isMember,
+  listChannels,
   manageRoles,
   removeUser,
 } from "./actions";
@@ -133,6 +134,23 @@ const controller = {
 
     const { guildId } = req.params;
     isIn(guildId)
+      .then((result) => res.status(200).json(result))
+      .catch((error) => {
+        const errorMsg = getErrorResult(error);
+        res.status(400).json(errorMsg);
+      });
+  },
+
+  channels: (req: Request, res: Response): void => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+
+    const { guildId } = req.params;
+    listChannels(guildId)
       .then((result) => res.status(200).json(result))
       .catch((error) => {
         const errorMsg = getErrorResult(error);

@@ -1,9 +1,10 @@
-import { Collection, GuildMember, Role } from "discord.js";
+import { Collection, GuildMember, Permissions, Role } from "discord.js";
 import Main from "../Main";
 import logger from "../utils/logger";
 import {
   ActionError,
   CreateRoleResult,
+  DiscordChannel,
   InviteResult,
   ManageRolesParams,
   UserResult,
@@ -126,4 +127,26 @@ const isIn = async (guildId: string): Promise<boolean> => {
   }
 };
 
-export { manageRoles, generateInvite, isMember, removeUser, createRole, isIn };
+const listChannels = async (guildId: string): Promise<DiscordChannel[]> => {
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const channels = guild.channels.cache
+    .filter(
+      (c) =>
+        c.type === "text" &&
+        c
+          .permissionsFor(guild.roles.everyone)
+          .has(Permissions.FLAGS.VIEW_CHANNEL)
+    )
+    .map((c) => ({ id: c.id, name: c.name }));
+  return channels;
+};
+
+export {
+  manageRoles,
+  generateInvite,
+  isMember,
+  removeUser,
+  createRole,
+  isIn,
+  listChannels,
+};
