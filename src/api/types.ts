@@ -33,6 +33,11 @@ type CreateRoleResult = {
   id: string;
 };
 
+type DiscordChannel = {
+  id: string;
+  name: string;
+};
+
 export {
   ManageRolesParams,
   UserResult,
@@ -40,4 +45,5 @@ export {
   ErrorResult,
   ActionError,
   CreateRoleResult,
+  DiscordChannel,
 };
