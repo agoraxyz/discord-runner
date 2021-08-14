@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { body } from "express-validator";
 import controller from "./controller";
 import validators from "./validators";
 
@@ -49,8 +48,16 @@ const createRouter = () => {
   router.post(
     "/role",
     validators.bodyDiscordId("serverId"),
-    body("roleName").trim().isLength({ min: 1 }),
+    validators.roleNameValidator,
     controller.createRole
+  );
+
+  router.patch(
+    "/role",
+    validators.bodyDiscordId("serverId"),
+    validators.bodyDiscordId("roleId"),
+    validators.roleNameValidator,
+    controller.updateRole
   );
 
   router.get(

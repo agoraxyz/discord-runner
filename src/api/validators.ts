@@ -11,4 +11,5 @@ export default {
   bodyDiscordId: getIdValidatorForBody,
   roleIdsArrayValidator: body("roleIds").isArray({ min: 1 }),
   messageValidator: body("message").isString().trim().isLength({ min: 1 }),
+  roleNameValidator: body("roleName").trim().isLength({ min: 1 }),
 };

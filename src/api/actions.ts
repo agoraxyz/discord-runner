@@ -110,6 +110,26 @@ const createRole = async (
   return { id: role.id };
 };
 
+const updateRoleName = async (
+  guildId: string,
+  roleId: string,
+  newRoleName: string
+) => {
+  logger.verbose(
+    `updateRoleName params: ${guildId}, ${roleId}, ${newRoleName}`
+  );
+  const guild = await Main.Client.guilds.fetch(guildId);
+
+  const role = await guild.roles.fetch(roleId);
+
+  const updatedRole = await role.edit(
+    { name: newRoleName },
+    `Updated by ${Main.Client.user.username} because the level name changed in Agora Space.`
+  );
+
+  return updatedRole;
+};
+
 const isIn = async (guildId: string): Promise<boolean> => {
   logger.verbose(`isIn params: ${guildId}`);
 
@@ -166,6 +186,7 @@ export {
   isMember,
   removeUser,
   createRole,
+  updateRoleName,
   isIn,
   listChannels,
 };
