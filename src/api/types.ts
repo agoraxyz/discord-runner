@@ -38,6 +38,11 @@ type DiscordChannel = {
   name: string;
 };
 
+type LevelInfo = {
+  name: string;
+  levels: string[];
+};
+
 export {
   ManageRolesParams,
   UserResult,
@@ -46,4 +51,5 @@ export {
   ActionError,
   CreateRoleResult,
   DiscordChannel,
+  LevelInfo,
 };

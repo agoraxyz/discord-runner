@@ -33,7 +33,7 @@ abstract class Events {
         )
       ) {
         logger.verbose(
-          `unkown requst: ${message.author.username}#${message.author.discriminator}: ${message.content}`
+          `unkown request: ${message.author.username}#${message.author.discriminator}: ${message.content}`
         );
         const embed = new MessageEmbed({
           title: "I'm sorry, but I couldn't interpret your request.",
