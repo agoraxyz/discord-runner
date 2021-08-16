@@ -176,7 +176,7 @@ const listChannels = async (
       category: c.parent.name.toUpperCase(),
     }));
 
-  logger.verbose(`listChannels result: ${channels}`);
+  logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
   return channels;
 };
 
