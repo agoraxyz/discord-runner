@@ -73,9 +73,9 @@ const createRouter = () => {
   );
 
   router.get(
-    "/servers/:userId",
+    "/administeredServers/:userId",
     validators.paramDiscordId("userId"),
-    controller.servers
+    controller.administeredServers
   );
 
   return router;

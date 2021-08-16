@@ -177,7 +177,7 @@ const controller = {
       });
   },
 
-  servers: (req: Request, res: Response): void => {
+  administeredServers: (req: Request, res: Response): void => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
