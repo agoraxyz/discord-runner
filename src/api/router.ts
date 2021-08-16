@@ -72,6 +72,12 @@ const createRouter = () => {
     controller.channels
   );
 
+  router.get(
+    "/servers/:userId",
+    validators.paramDiscordId("userId"),
+    controller.servers
+  );
+
   return router;
 };
 

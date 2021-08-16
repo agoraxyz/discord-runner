@@ -180,6 +180,17 @@ const listChannels = async (
   return channels;
 };
 
+const listAdministeredServers = async (userId: string) => {
+  logger.verbose(`listAdministeredServers params: ${userId}`);
+
+  const administeredServers = Main.Client.guilds.cache
+    .filter((g) => g.member(userId)?.hasPermission("ADMINISTRATOR"))
+    .map((g) => ({ name: g.name, id: g.id }));
+
+  logger.verbose(`listAdministeredServers result: ${administeredServers}`);
+  return administeredServers;
+};
+
 export {
   manageRoles,
   generateInvite,
@@ -189,4 +200,5 @@ export {
   updateRoleName,
   isIn,
   listChannels,
+  listAdministeredServers,
 };
