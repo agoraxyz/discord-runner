@@ -43,6 +43,11 @@ type LevelInfo = {
   levels: string[];
 };
 
+type InviteData = {
+  code: string;
+  inviteChannelId: string;
+};
+
 export {
   ManageRolesParams,
   UserResult,
@@ -52,4 +57,5 @@ export {
   CreateRoleResult,
   DiscordChannel,
   LevelInfo,
+  InviteData,
 };
