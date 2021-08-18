@@ -68,7 +68,7 @@ const logAxiosResponse = (res: AxiosResponse<any>) => {
 };
 
 const getUserHash = async (platformUserId: string): Promise<string> => {
-  const hmac = createHmac(config.hmacAlgorithm, config.hmacAlgorithm);
+  const hmac = createHmac(config.hmacAlgorithm, config.hmacSecret);
   hmac.update(platformUserId);
   const hashedId = hmac.digest("base64");
   const user = await redisClient.getAsync(hashedId);
