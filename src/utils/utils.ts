@@ -78,7 +78,7 @@ const getUserHash = async (platformUserId: string): Promise<string> => {
   return hashedId;
 };
 
-const getUserPlatformId = async (
+const getUserDiscordId = async (
   userHash: string
 ): Promise<string | undefined> => {
   const platformUserId = await redisClient.getAsync(userHash);
@@ -91,5 +91,5 @@ export {
   logBackendError,
   logAxiosResponse,
   getUserHash,
-  getUserPlatformId,
+  getUserDiscordId,
 };

@@ -9,35 +9,39 @@ import {
   ManageRolesParams,
   UserResult,
 } from "./types";
-import { getUserResult } from "../utils/utils";
+import { getUserDiscordId, getUserResult } from "../utils/utils";
 
 const manageRoles = async (
   params: ManageRolesParams,
   isUpgrade: boolean
 ): Promise<UserResult> => {
   logger.verbose(`manageRoles params: ${JSON.stringify(params)}, ${isUpgrade}`);
-  const guild = await Main.Client.guilds.fetch(params.guildId);
+  const { userHash, guildId, roleIds, message } = params;
 
-  const member = await guild.members.fetch(params.userId);
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const discordId = await getUserDiscordId(userHash);
+
+  if (!discordId)
+    throw new Error(`PlatformUserId doesn't exists for ${userHash} userHash.`);
+
+  const member = await guild.members.fetch(discordId);
 
   const roleManager = await guild.roles.fetch();
 
   const rolesToManage: Collection<string, Role> = roleManager.cache.filter(
-    (role) => params.roleIds.includes(role.id)
+    (role) => roleIds.includes(role.id)
   );
 
-  if (rolesToManage.size !== params.roleIds.length) {
-    const missingRoleIds = params.roleIds.filter(
+  if (rolesToManage.size !== roleIds.length) {
+    const missingRoleIds = roleIds.filter(
       (roleId) => !rolesToManage.map((role) => role.id).includes(roleId)
     );
     throw new ActionError("missing role(s)", missingRoleIds);
   }
 
   if (
-    (isUpgrade &&
-      params.roleIds.some((roleId) => !member.roles.cache.has(roleId))) ||
-    (!isUpgrade &&
-      params.roleIds.some((roleId) => member.roles.cache.has(roleId)))
+    (isUpgrade && roleIds.some((roleId) => !member.roles.cache.has(roleId))) ||
+    (!isUpgrade && roleIds.some((roleId) => member.roles.cache.has(roleId)))
   ) {
     let updatedMember: GuildMember;
     if (isUpgrade) {
@@ -46,7 +50,7 @@ const manageRoles = async (
       updatedMember = await member.roles.remove(rolesToManage);
     }
 
-    updatedMember.send(params.message).catch(logger.error);
+    updatedMember.send(message).catch(logger.error);
 
     return getUserResult(updatedMember);
   }
@@ -77,19 +81,27 @@ const generateInvite = async (guildId: string): Promise<InviteResult> => {
 
 const isMember = async (
   guildId: string,
-  userId: string
+  userHash: string
 ): Promise<UserResult> => {
   const guild = await Main.Client.guilds.fetch(guildId);
+  const discordId = await getUserDiscordId(userHash);
 
-  const member = await guild.members.fetch(userId);
+  if (!discordId)
+    throw new Error(`PlatformUserId doesn't exists for ${userHash} userHash.`);
+
+  const member = await guild.members.fetch(discordId);
 
   return getUserResult(member);
 };
 
-const removeUser = async (guildId: string, userId: string): Promise<void> => {
+const removeUser = async (guildId: string, userHash: string): Promise<void> => {
   const guild = await Main.Client.guilds.fetch(guildId);
+  const discordId = await getUserDiscordId(userHash);
 
-  const member = await guild.members.fetch(userId);
+  if (!discordId)
+    throw new Error(`PlatformUserId doesn't exists for ${userHash} userHash.`);
+
+  const member = await guild.members.fetch(discordId);
 
   await member.kick();
 };
@@ -180,11 +192,15 @@ const listChannels = async (
   return channels;
 };
 
-const listAdministeredServers = async (userId: string) => {
-  logger.verbose(`listAdministeredServers params: ${userId}`);
+const listAdministeredServers = async (userHash: string) => {
+  logger.verbose(`listAdministeredServers params: ${userHash}`);
+  const discordId = await getUserDiscordId(userHash);
+
+  if (!discordId)
+    throw new Error(`PlatformUserId doesn't exists for ${userHash} userHash.`);
 
   const administeredServers = Main.Client.guilds.cache
-    .filter((g) => g.member(userId)?.hasPermission("ADMINISTRATOR"))
+    .filter((g) => g.member(discordId)?.hasPermission("ADMINISTRATOR"))
     .map((g) => ({ name: g.name, id: g.id }));
 
   logger.verbose(`listAdministeredServers result: ${administeredServers}`);

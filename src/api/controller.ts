@@ -81,8 +81,8 @@ const controller = {
       return;
     }
 
-    const { guildId, userId } = req.params;
-    isMember(guildId, userId)
+    const { guildId, userHash } = req.params;
+    isMember(guildId, userHash)
       .then((result) => {
         res.status(200).json(result);
       })
@@ -100,8 +100,8 @@ const controller = {
       return;
     }
 
-    const { guildId, userId } = req.params;
-    removeUser(guildId, userId)
+    const { guildId, userHash } = req.params;
+    removeUser(guildId, userHash)
       .then(() => res.status(200).send())
       .catch((error) => {
         const errorMsg = getErrorResult(error);
@@ -185,8 +185,8 @@ const controller = {
       return;
     }
 
-    const { userId } = req.params;
-    listAdministeredServers(userId)
+    const { userHash } = req.params;
+    listAdministeredServers(userHash)
       .then((result) => res.status(200).json(result))
       .catch((error) => {
         const errorMsg = getErrorResult(error);
