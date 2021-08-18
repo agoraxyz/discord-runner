@@ -1,6 +1,8 @@
 version: "3.7"
 services:
   discord-runner:
+    depends_on:
+      - redis
     container_name: discord-runner
     build:
       context: .
@@ -10,7 +12,29 @@ services:
       - .env
     networks:
       - runner-discord
+      - redis-discord
+
+  redis:
+    security_opt:
+      - no-new-privileges
+    tmpfs:
+      - /tmp
+    container_name: redis-discord
+    image: bitnami/redis:6.2-debian-10
+    restart: always
+    env_file:
+      - redis.env
+    networks:
+      - redis-discord
+    ports:
+      - 6380:6380
+    volumes:
+      - redis-persistence:/bitnami/redis/data
 
 networks:
+  redis-discord:
   runner-discord:
     external: true
+
+volumes:
+  redis-persistence:

@@ -32,6 +32,18 @@ PREFIX="!"
 PORT=8990
 EMBED_COLOR="6366f1"
 BACKEND_URL="https://api.agora.space/"
+REDIS_HOST=redis://@redis-discord:6380
+HMAC_ALGORITHM=
+HMAC_SECRET=
+```
+
+Create another file called redis.env:
+
+```
+ALLOW_EMPTY_PASSWORD=no
+REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+REDIS_PASSWORD=
+REDIS_PORT_NUMBER=6380
 ```
 
 Run the bot:
