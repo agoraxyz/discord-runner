@@ -79,6 +79,13 @@ const createRouter = () => {
     controller.administeredServers
   );
 
+  router.get(
+    "/getUserRoles/:guildId/:userId",
+    validators.paramDiscordId("guildId"),
+    validators.paramDiscordId("userId"),
+    controller.getUserRoles
+  );
+
   return router;
 };
 
