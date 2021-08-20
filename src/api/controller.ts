@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
-import { getErrorResult } from "../utils/utils";
+import { getErrorResult, getUserHash } from "../utils/utils";
 import {
   createRole,
   generateInvite,
@@ -192,6 +192,23 @@ const controller = {
         const errorMsg = getErrorResult(error);
         res.status(400).json(errorMsg);
       });
+  },
+
+  hashUserId: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      const { userId } = req.params;
+      const userHash = await getUserHash(userId);
+      res.status(200).json(userHash);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
   },
 };
 

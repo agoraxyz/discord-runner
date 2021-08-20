@@ -78,6 +78,12 @@ const createRouter = () => {
     controller.administeredServers
   );
 
+  router.get(
+    "/hashUserId/:userId",
+    validators.paramDiscordId("userId"),
+    controller.hashUserId
+  );
+
   return router;
 };
 
