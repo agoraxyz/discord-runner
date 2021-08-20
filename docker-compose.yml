@@ -26,8 +26,6 @@ services:
       - redis.env
     networks:
       - redis-discord
-    ports:
-      - 6380:6380
     volumes:
       - redis-persistence:/bitnami/redis/data
 
