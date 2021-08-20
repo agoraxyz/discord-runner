@@ -4,6 +4,7 @@ import { getErrorResult } from "../utils/utils";
 import {
   createRole,
   generateInvite,
+  getUserRoles,
   isIn,
   isMember,
   listAdministeredServers,
@@ -192,6 +193,24 @@ const controller = {
         const errorMsg = getErrorResult(error);
         res.status(400).json(errorMsg);
       });
+  },
+
+  getUserRoles: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+
+    const { guildId, userId } = req.params;
+    try {
+      const userRoles = await getUserRoles(guildId, userId);
+      res.status(200).json(userRoles);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
   },
 };
 
