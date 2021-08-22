@@ -61,9 +61,9 @@ const controller = {
       return;
     }
 
-    const { guildId } = req.params;
+    const { guildId, inviteChannelId } = req.params;
 
-    generateInvite(guildId)
+    generateInvite(guildId, inviteChannelId)
       .then((result) => {
         res.status(200).json(result);
       })

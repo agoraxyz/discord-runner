@@ -63,8 +63,18 @@ abstract class Events {
   onInviteDelete(invite: [Invite]): void {
     const { guild } = invite[0];
     logger.verbose(`onInviteDelete guild: ${guild.name}`);
-    guild.systemChannel.createInvite({ maxAge: 0 }).then((newInvite) => {
-      Main.inviteCodeCache.set(guild.id, newInvite.code);
+
+    const inviteChannelId = Main.inviteDataCache.get(guild.id)?.inviteChannelId;
+    const inviteChannel =
+      (inviteChannelId &&
+        guild.channels.cache.find((c) => c.id === inviteChannelId)) ||
+      guild.systemChannel;
+
+    inviteChannel.createInvite({ maxAge: 0 }).then((newInvite) => {
+      Main.inviteDataCache.set(guild.id, {
+        code: newInvite.code,
+        inviteChannelId,
+      });
       logger.verbose(
         `invite code cache updated: ${guild.id}, ${newInvite.code}`
       );

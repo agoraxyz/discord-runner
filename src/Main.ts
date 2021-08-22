@@ -1,6 +1,7 @@
 /* eslint no-underscore-dangle: ["error", { "allowAfterThis": true }] */
 import { Client } from "@typeit/discord";
 import api from "./api/api";
+import { InviteData } from "./api/types";
 import config from "./config";
 
 class Main {
@@ -10,7 +11,7 @@ class Main {
     return this._client;
   }
 
-  public static inviteCodeCache: Map<string, string>;
+  public static inviteDataCache: Map<string, InviteData>;
 
   static start(): void {
     api();
@@ -22,7 +23,7 @@ class Main {
       `${__dirname}/*.js`
     );
 
-    this.inviteCodeCache = new Map();
+    this.inviteDataCache = new Map();
   }
 }
 
