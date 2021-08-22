@@ -6,6 +6,7 @@ import NotABot from "./Guards/NotABot";
 import Main from "./Main";
 import { statusUpdate } from "./service";
 import logger from "./utils/logger";
+import { getUserHash } from "./utils/utils";
 
 @Discord(config.prefix)
 abstract class Commands {
@@ -35,12 +36,13 @@ abstract class Commands {
     command.channel.send(
       "I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)"
     );
-    statusUpdate(command.author.id).then((levelInfo) => {
+    statusUpdate(command.author.id).then(async (levelInfo) => {
       logger.verbose(`levelInfo: ${JSON.stringify(levelInfo)}`);
+      const userHash = await getUserHash(command.author.id);
       if (levelInfo) {
         const embed = new MessageEmbed({
           author: {
-            name: `${command.author.username}'s communities and levels`,
+            name: `${command.author.username}'s (UserID: ${userHash})communities and levels`,
             iconURL: `https://cdn.discordapp.com/avatars/${command.author.id}/${command.author.avatar}.png`,
           },
           color: config.embedColor,
