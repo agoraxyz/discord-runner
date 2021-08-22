@@ -13,6 +13,8 @@ services:
     networks:
       - runner-discord
       - redis-discord
+    ports:
+      - 8990:8990
 
   redis:
     security_opt:
