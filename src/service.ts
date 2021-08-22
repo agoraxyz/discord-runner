@@ -44,11 +44,9 @@ const userRemoved = async (dcUserId: string, serverId: string) => {
 };
 
 const statusUpdate = async (
-  discordId: string
+  userHash: string
 ): Promise<LevelInfo[] | undefined> => {
-  logger.verbose(`statusUpdate params: ${discordId}`);
-  const userHash = await getUserHash(discordId);
-  logger.verbose(`statusUpdate userHash - ${userHash}`);
+  logger.verbose(`statusUpdate params: ${userHash}`);
   try {
     const response = await axios.post(`${API_BASE_URL}/user/statusUpdate`, {
       discordId: userHash,

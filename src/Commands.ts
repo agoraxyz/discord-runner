@@ -6,7 +6,7 @@ import NotABot from "./Guards/NotABot";
 import Main from "./Main";
 import { statusUpdate } from "./service";
 import logger from "./utils/logger";
-import { getUserHash } from "./utils/utils";
+import { getUserDiscordId, getUserHash } from "./utils/utils";
 
 @Discord(config.prefix)
 abstract class Commands {
@@ -27,18 +27,22 @@ abstract class Commands {
       .catch(logger.error);
   }
 
-  @Command("status")
+  @Command("status :userHash")
   @Guard(NotABot)
-  status(command: CommandMessage): void {
+  async status(command: CommandMessage): Promise<void> {
+    const userHash = command.args.userHash
+      ? await getUserDiscordId(command.args.userHash)
+      : await getUserHash(command.author.id);
     logger.verbose(
-      `status command was used by ${command.author.username}#${command.author.discriminator}`
+      `status command was used by ${command.author.username}#${
+        command.author.discriminator
+      } -  targeted: ${!!command.args.userHash} userHash: ${userHash}`
     );
     command.channel.send(
       "I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)"
     );
-    statusUpdate(command.author.id).then(async (levelInfo) => {
+    statusUpdate(userHash).then(async (levelInfo) => {
       logger.verbose(`levelInfo: ${JSON.stringify(levelInfo)}`);
-      const userHash = await getUserHash(command.author.id);
       if (levelInfo) {
         const embed = new MessageEmbed({
           author: {
