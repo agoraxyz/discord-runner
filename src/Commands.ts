@@ -6,7 +6,7 @@ import NotABot from "./Guards/NotABot";
 import Main from "./Main";
 import { statusUpdate } from "./service";
 import logger from "./utils/logger";
-import { getUserDiscordId, getUserHash } from "./utils/utils";
+import { getUserHash } from "./utils/utils";
 
 @Discord(config.prefix)
 abstract class Commands {
@@ -31,7 +31,7 @@ abstract class Commands {
   @Guard(NotABot)
   async status(command: CommandMessage): Promise<void> {
     const userHash = command.args.userHash
-      ? await getUserDiscordId(command.args.userHash)
+      ? command.args.userHash
       : await getUserHash(command.author.id);
     logger.verbose(
       `status command was used by ${command.author.username}#${
@@ -46,11 +46,12 @@ abstract class Commands {
       if (levelInfo) {
         const embed = new MessageEmbed({
           author: {
-            name: `${command.author.username}'s (UserID: ${userHash})communities and levels`,
+            name: `${command.author.username}'s communities and levels`,
             iconURL: `https://cdn.discordapp.com/avatars/${command.author.id}/${command.author.avatar}.png`,
           },
           color: config.embedColor,
         });
+        embed.addField(`UserID:`, `${userHash}`, true);
         levelInfo.forEach((c) => {
           if (c.levels.length) {
             embed.addField(c.name, c.levels.join(", "));
