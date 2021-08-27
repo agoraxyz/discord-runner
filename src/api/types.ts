@@ -40,7 +40,10 @@ type DiscordChannel = {
 
 type LevelInfo = {
   name: string;
+  discordServerId: string;
   levels: string[];
+  accessedRoles: string[];
+  notAccessedRoles: string[];
 };
 
 type InviteData = {
