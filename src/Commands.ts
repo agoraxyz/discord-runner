@@ -39,7 +39,7 @@ abstract class Commands {
       } -  targeted: ${!!command.args.userHash} userHash: ${userHash}`
     );
     command.channel.send(
-      "I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)"
+      `I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)\nYour user hash: \`${userHash}\``
     );
     statusUpdate(userHash)
       .then(async (levelInfo) => {
@@ -91,7 +91,6 @@ abstract class Commands {
             },
             color: config.embedColor,
           });
-          embed.addField(`UserID:`, `${userHash}`, true);
           levelInfo.forEach((c) => {
             if (c.levels.length) {
               embed.addField(c.name, c.levels.join(", "));
