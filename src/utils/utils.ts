@@ -36,7 +36,7 @@ const getErrorResult = (error: Error): ErrorResult => {
     ids = error.ids;
   } else {
     logger.error(error);
-    errorMsg = "unknown error";
+    errorMsg = error.message;
   }
   return {
     errors: [
