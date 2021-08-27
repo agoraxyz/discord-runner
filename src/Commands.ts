@@ -43,7 +43,6 @@ abstract class Commands {
     );
     statusUpdate(userHash)
       .then(async (levelInfo) => {
-        logger.verbose(`levelInfo: ${JSON.stringify(levelInfo)}`);
         if (levelInfo) {
           await Promise.all(
             levelInfo.map(async (c) => {
