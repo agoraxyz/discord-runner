@@ -210,6 +210,21 @@ const controller = {
       res.status(400).json(errorMsg);
     }
   },
+
+  createChannel: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      res.status(200).json();
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
+  },
 };
 
 export default controller;
