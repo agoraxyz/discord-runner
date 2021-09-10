@@ -20,4 +20,6 @@ export default {
   roleIdsArrayValidator: body("roleIds").isArray({ min: 1 }),
   messageValidator: body("message").isString().trim().isLength({ min: 1 }),
   roleNameValidator: body("roleName").trim().isLength({ min: 1 }),
+  channelNameValidator: body("channelName").trim().isLength({ min: 1 }),
+  categoryNameValidator: body("categoryName").trim().optional(),
 };
