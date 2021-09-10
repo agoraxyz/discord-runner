@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import { getErrorResult, getUserHash } from "../utils/utils";
 import {
+  createChannel,
   createRole,
   generateInvite,
   isIn,
@@ -12,7 +13,7 @@ import {
   removeUser,
   updateRoleName,
 } from "./actions";
-import { ManageRolesParams } from "./types";
+import { CreateChannelParams, ManageRolesParams } from "./types";
 
 const controller = {
   upgrade: (req: Request, res: Response): void => {
@@ -219,7 +220,9 @@ const controller = {
       return;
     }
     try {
-      res.status(200).json();
+      const params: CreateChannelParams = req.body;
+      const createdChannel = await createChannel(params);
+      res.status(200).json(createdChannel.name);
     } catch (error) {
       const errorMsg = getErrorResult(error);
       res.status(400).json(errorMsg);
