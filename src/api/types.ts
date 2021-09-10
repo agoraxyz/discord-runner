@@ -5,6 +5,13 @@ type ManageRolesParams = {
   message: string;
 };
 
+type CreateChannelParams = {
+  guildId: string;
+  roleId: string;
+  channelName: string;
+  categoryName: string;
+};
+
 type UserResult = {
   username: string;
   discriminator: string;
@@ -53,6 +60,7 @@ type InviteData = {
 
 export {
   ManageRolesParams,
+  CreateChannelParams,
   UserResult,
   InviteResult,
   ErrorResult,

@@ -75,7 +75,7 @@ const createRouter = () => {
 
   router.post(
     "/channels/create",
-    validators.bodyDiscordId("serverId"),
+    validators.bodyDiscordId("guildId"),
     validators.bodyDiscordId("roleId"),
     validators.channelNameValidator,
     validators.categoryNameValidator,
