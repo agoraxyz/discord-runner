@@ -3,6 +3,7 @@ import Main from "../Main";
 import logger from "../utils/logger";
 import {
   ActionError,
+  CreateChannelParams,
   CreateRoleResult,
   DiscordChannel,
   InviteResult,
@@ -128,6 +129,34 @@ const removeUser = async (guildId: string, userHash: string): Promise<void> => {
   await member.kick();
 };
 
+const createChannel = async (params: CreateChannelParams) => {
+  logger.verbose(`createChannel params: ${params}`);
+  const { guildId, roleId, channelName, categoryName } = params;
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const createdChannel = await guild.channels.create(channelName, {
+    type: "text",
+    permissionOverwrites: [
+      {
+        id: guild.roles.everyone.id,
+        deny: ["VIEW_CHANNEL"],
+      },
+      {
+        id: roleId,
+        allow: ["SEND_MESSAGES", "ADD_REACTIONS", "ATTACH_FILES"],
+      },
+    ],
+  });
+  const category = guild.channels.cache.find(
+    (c) => c.name === categoryName && c.type === "category"
+  );
+  if (category) {
+    const updatedChannel = await createdChannel.setParent(category.id);
+    return updatedChannel;
+  } 
+    return createdChannel;
+  
+};
+
 const createRole = async (
   guildId: string,
   roleName: string
@@ -239,4 +268,5 @@ export {
   isIn,
   listChannels,
   listAdministeredServers,
+  createChannel,
 };
