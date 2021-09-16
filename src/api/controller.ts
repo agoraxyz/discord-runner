@@ -5,6 +5,7 @@ import {
   createRole,
   generateInvite,
   getUserRoles,
+  isGuildMember,
   isIn,
   isMember,
   listAdministeredServers,
@@ -195,7 +196,7 @@ const controller = {
       });
   },
 
-  getUserRoles: async (req: Request, res: Response): Promise<void> => {
+  isGuildMember: async (req: Request, res: Response): Promise<void> => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -203,9 +204,9 @@ const controller = {
       return;
     }
 
-    const { guildId, userId } = req.params;
+    const { guildId, roleId, userId } = req.params;
     try {
-      const userRoles = await getUserRoles(guildId, userId);
+      const userRoles = await isGuildMember(guildId, roleId, userId);
       res.status(200).json(userRoles);
     } catch (error) {
       const errorMsg = getErrorResult(error);

@@ -213,16 +213,14 @@ const listAdministeredServers = async (userId: string) => {
   return administeredServers;
 };
 
-const getUserRoles = async (guildId: string, userId: string) => {
-  logger.verbose(`getUserRoles params - guildId: ${guildId} userId: ${userId}`);
+const isGuildMember = async (guildId: string, roleId: string, userId: string) => {
+  logger.verbose(`isGuildMember params - guildId: ${guildId} roleId: ${roleId} userId: ${userId}`);
   const guild = await Main.Client.guilds.fetch(guildId);
   const user = await guild.members.fetch(userId);
-  const userCurrentRoles = user.roles.cache
-    .filter((r) => r.name !== "@everyone")
-    .map((r) => r.id);
+  const result = user.roles.cache.some((r) => r.id === roleId);
 
-  logger.verbose(`getUserRoles result: ${userCurrentRoles}`);
-  return userCurrentRoles;
+  logger.verbose(`isGuildMember result: ${result}`);
+  return result;
 };
 
 export {
@@ -235,5 +233,5 @@ export {
   isIn,
   listChannels,
   listAdministeredServers,
-  getUserRoles,
+  isGuildMember,
 };
