@@ -1,6 +1,9 @@
 import { AxiosResponse } from "axios";
+import { createHmac } from "crypto";
 import { DiscordAPIError, GuildMember } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
+import config from "../config";
+import redisClient from "../database";
 import logger from "./logger";
 
 const getUserResult = (member: GuildMember): UserResult => ({
@@ -33,7 +36,7 @@ const getErrorResult = (error: Error): ErrorResult => {
     ids = error.ids;
   } else {
     logger.error(error);
-    errorMsg = "unknown error";
+    errorMsg = error.message;
   }
   return {
     errors: [
@@ -64,4 +67,29 @@ const logAxiosResponse = (res: AxiosResponse<any>) => {
   );
 };
 
-export { getUserResult, getErrorResult, logBackendError, logAxiosResponse };
+const getUserHash = async (platformUserId: string): Promise<string> => {
+  const hmac = createHmac(config.hmacAlgorithm, config.hmacSecret);
+  hmac.update(platformUserId);
+  const hashedId = hmac.digest("base64");
+  const user = await redisClient.getAsync(hashedId);
+  if (!user) {
+    redisClient.client.SET(hashedId, platformUserId);
+  }
+  return hashedId;
+};
+
+const getUserDiscordId = async (
+  userHash: string
+): Promise<string | undefined> => {
+  const platformUserId = await redisClient.getAsync(userHash);
+  return platformUserId || undefined;
+};
+
+export {
+  getUserResult,
+  getErrorResult,
+  logBackendError,
+  logAxiosResponse,
+  getUserHash,
+  getUserDiscordId,
+};

@@ -2,7 +2,7 @@ import axios from "axios";
 import { LevelInfo } from "./api/types";
 import config from "./config";
 import logger from "./utils/logger";
-import { logAxiosResponse, logBackendError } from "./utils/utils";
+import { getUserHash, logAxiosResponse, logBackendError } from "./utils/utils";
 
 const API_BASE_URL = config.backendUrl;
 const PLATFORM = "DISCORD";
@@ -13,9 +13,11 @@ const userJoined = async (
 ): Promise<boolean> => {
   logger.verbose(`userJoined params: ${platformUserId}, ${serverId}`);
   try {
+    const userHash = await getUserHash(platformUserId);
+    logger.verbose(`userJoined userHash - ${userHash}`);
     const response = await axios.post(`${API_BASE_URL}/user/joinedPlatform`, {
       platform: PLATFORM,
-      platformUserId,
+      platformUserId: userHash,
       serverId,
     });
     logger.verbose(`joinedPlatform result:`);
@@ -28,11 +30,13 @@ const userJoined = async (
   }
 };
 
-const userRemoved = (dcUserId: string, serverId: string): void => {
+const userRemoved = async (dcUserId: string, serverId: string) => {
+  const userHash = await getUserHash(dcUserId);
+  logger.verbose(`userRemoved userHash - ${userHash}`);
   axios
     .post(`${API_BASE_URL}/user/removeFromPlatform`, {
       platform: PLATFORM,
-      platformUserId: dcUserId,
+      platformUserId: userHash,
       serverId,
       triggerKick: false,
     })
@@ -40,12 +44,12 @@ const userRemoved = (dcUserId: string, serverId: string): void => {
 };
 
 const statusUpdate = async (
-  discordId: string
+  userHash: string
 ): Promise<LevelInfo[] | undefined> => {
-  logger.verbose(`statusUpdate params: ${discordId}`);
+  logger.verbose(`statusUpdate params: ${userHash}`);
   try {
     const response = await axios.post(`${API_BASE_URL}/user/statusUpdate`, {
-      discordId,
+      discordId: userHash,
     });
     logAxiosResponse(response);
     return response.data;

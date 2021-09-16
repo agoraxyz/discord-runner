@@ -8,7 +8,7 @@ const createRouter = () => {
   router.post(
     "/upgrade",
     validators.bodyDiscordId("guildId"),
-    validators.bodyDiscordId("userId"),
+    validators.bodyUserHash("userHash"),
     validators.roleIdsArrayValidator,
     validators.bodyDiscordId("roleIds.*"),
     validators.messageValidator,
@@ -18,7 +18,7 @@ const createRouter = () => {
   router.post(
     "/downgrade",
     validators.bodyDiscordId("guildId"),
-    validators.bodyDiscordId("userId"),
+    validators.bodyUserHash("userHash"),
     validators.roleIdsArrayValidator,
     validators.bodyDiscordId("roleIds.*"),
     validators.messageValidator,
@@ -33,16 +33,16 @@ const createRouter = () => {
   );
 
   router.get(
-    "/isMember/:guildId/:userId",
+    "/isMember/:guildId/:userHash",
     validators.paramDiscordId("guildId"),
-    validators.paramDiscordId("userId"),
+    validators.paramUserHash("userHash"),
     controller.isMember
   );
 
   router.delete(
-    "/kick/:guildId/:userId",
+    "/kick/:guildId/:userHash",
     validators.paramDiscordId("guildId"),
-    validators.paramDiscordId("userId"),
+    validators.paramUserHash("userHash"),
     controller.removeUser
   );
 
@@ -73,18 +73,33 @@ const createRouter = () => {
     controller.channels
   );
 
+  router.post(
+    "/channels/create",
+    validators.bodyDiscordId("guildId"),
+    validators.bodyDiscordId("roleId"),
+    validators.channelNameValidator,
+    validators.categoryNameValidator,
+    controller.createChannel
+  );
+
   router.get(
-    "/administeredServers/:userId",
-    validators.paramDiscordId("userId"),
+    "/administeredServers/:userHash",
+    validators.paramUserHash("userHash"),
     controller.administeredServers
   );
 
   router.get(
+<<<<<<< HEAD
     "/isGuildMember/:guildId/:roleId/:userId",
     validators.paramDiscordId("guildId"),
     validators.paramDiscordId("roleId"),
     validators.paramDiscordId("userId"),
     controller.isGuildMember
+=======
+    "/hashUserId/:userId",
+    validators.paramDiscordId("userId"),
+    controller.hashUserId
+>>>>>>> main
   );
 
   return router;

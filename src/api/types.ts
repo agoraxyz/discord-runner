@@ -1,8 +1,15 @@
 type ManageRolesParams = {
   guildId: string;
-  userId: string;
+  userHash: string;
   roleIds: string[];
   message: string;
+};
+
+type CreateChannelParams = {
+  guildId: string;
+  roleId: string;
+  channelName: string;
+  categoryName?: string;
 };
 
 type UserResult = {
@@ -40,7 +47,10 @@ type DiscordChannel = {
 
 type LevelInfo = {
   name: string;
+  discordServerId: string;
   levels: string[];
+  accessedRoles: string[];
+  notAccessedRoles: string[];
 };
 
 type InviteData = {
@@ -50,6 +60,7 @@ type InviteData = {
 
 export {
   ManageRolesParams,
+  CreateChannelParams,
   UserResult,
   InviteResult,
   ErrorResult,

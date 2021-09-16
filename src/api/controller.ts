@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
-import { getErrorResult } from "../utils/utils";
+import { getErrorResult, getUserHash } from "../utils/utils";
 import {
+  createChannel,
   createRole,
   generateInvite,
   getUserRoles,
@@ -14,7 +15,7 @@ import {
   removeUser,
   updateRoleName,
 } from "./actions";
-import { ManageRolesParams } from "./types";
+import { CreateChannelParams, ManageRolesParams } from "./types";
 
 const controller = {
   upgrade: (req: Request, res: Response): void => {
@@ -83,8 +84,8 @@ const controller = {
       return;
     }
 
-    const { guildId, userId } = req.params;
-    isMember(guildId, userId)
+    const { guildId, userHash } = req.params;
+    isMember(guildId, userHash)
       .then((result) => {
         res.status(200).json(result);
       })
@@ -102,8 +103,8 @@ const controller = {
       return;
     }
 
-    const { guildId, userId } = req.params;
-    removeUser(guildId, userId)
+    const { guildId, userHash } = req.params;
+    removeUser(guildId, userHash)
       .then(() => res.status(200).send())
       .catch((error) => {
         const errorMsg = getErrorResult(error);
@@ -187,8 +188,8 @@ const controller = {
       return;
     }
 
-    const { userId } = req.params;
-    listAdministeredServers(userId)
+    const { userHash } = req.params;
+    listAdministeredServers(userHash)
       .then((result) => res.status(200).json(result))
       .catch((error) => {
         const errorMsg = getErrorResult(error);
@@ -196,18 +197,34 @@ const controller = {
       });
   },
 
-  isGuildMember: async (req: Request, res: Response): Promise<void> => {
+  hashUserId: async (req: Request, res: Response): Promise<void> => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;
     }
-
-    const { guildId, roleId, userId } = req.params;
     try {
-      const userRoles = await isGuildMember(guildId, roleId, userId);
-      res.status(200).json(userRoles);
+      const { userId } = req.params;
+      const userHash = await getUserHash(userId);
+      res.status(200).json(userHash);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
+  },
+
+  createChannel: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      const params: CreateChannelParams = req.body;
+      const createdChannel = await createChannel(params);
+      res.status(200).json(createdChannel.name);
     } catch (error) {
       const errorMsg = getErrorResult(error);
       res.status(400).json(errorMsg);

@@ -2,6 +2,7 @@ build/
 node_modules/
 
 .env
+redis.env
 yarn-error.log
 .DS_Store
 .vscode
