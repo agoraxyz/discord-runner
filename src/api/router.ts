@@ -80,10 +80,11 @@ const createRouter = () => {
   );
 
   router.get(
-    "/getUserRoles/:guildId/:userId",
+    "/isGuildMember/:guildId/:roleId/:userId",
     validators.paramDiscordId("guildId"),
+    validators.paramDiscordId("roleId"),
     validators.paramDiscordId("userId"),
-    controller.getUserRoles
+    controller.isGuildMember
   );
 
   return router;
