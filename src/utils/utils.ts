@@ -29,7 +29,7 @@ const getErrorResult = (error: Error): ErrorResult => {
       // Unknown Member
       errorMsg = "user is not member";
     } else {
-      errorMsg = "discord api error";
+      errorMsg = `discord api error: ${error.message}`;
     }
   } else if (error instanceof ActionError) {
     errorMsg = error.message;

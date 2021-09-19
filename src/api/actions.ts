@@ -281,6 +281,17 @@ const listAdministeredServers = async (userHash: string) => {
   return administeredServers;
 };
 
+const getCategories = async (inviteCode: string) => {
+  const invite = await Main.Client.fetchInvite(inviteCode);
+  const categories = invite.guild.channels.cache
+    .filter((c) => c.type === "category")
+    .map((c) => ({ id: c.id, name: c.name }));
+  return {
+    serverId: invite.guild.id,
+    categories,
+  };
+};
+
 export {
   manageRoles,
   generateInvite,
@@ -292,4 +303,5 @@ export {
   listChannels,
   listAdministeredServers,
   createChannel,
+  getCategories,
 };

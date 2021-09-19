@@ -5,6 +5,7 @@ import {
   createChannel,
   createRole,
   generateInvite,
+  getCategories,
   isIn,
   isMember,
   listAdministeredServers,
@@ -13,7 +14,11 @@ import {
   removeUser,
   updateRoleName,
 } from "./actions";
-import { CreateChannelParams, ManageRolesParams } from "./types";
+import {
+  CreateChannelParams,
+  GetCategoriesParams,
+  ManageRolesParams,
+} from "./types";
 
 const controller = {
   upgrade: (req: Request, res: Response): void => {
@@ -223,6 +228,24 @@ const controller = {
       const params: CreateChannelParams = req.body;
       const createdChannel = await createChannel(params);
       res.status(200).json(createdChannel.name);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
+  },
+
+  getCategories: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      const params: GetCategoriesParams = req.body;
+      const categories = await getCategories(params.inviteCode);
+
+      res.status(200).json(categories);
     } catch (error) {
       const errorMsg = getErrorResult(error);
       res.status(400).json(errorMsg);

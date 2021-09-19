@@ -94,6 +94,12 @@ const createRouter = () => {
     controller.hashUserId
   );
 
+  router.get(
+    "/categories",
+    validators.inviteCodeValidator,
+    controller.getCategories
+  );
+
   return router;
 };
 
