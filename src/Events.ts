@@ -7,6 +7,7 @@ import {
   MessageEmbed,
   PartialGuildMember,
 } from "discord.js";
+import { notifyUser } from "./api/actions";
 import Commands from "./Commands";
 import config from "./config";
 import IsAPrivateMessage from "./Guards/IsAPrivateMessage";
@@ -50,6 +51,7 @@ abstract class Events {
   onGuildMemberAdd(members: [GuildMember | PartialGuildMember]): void {
     const [member] = members;
     userJoined(member.user.id, member.guild.id);
+    notifyUser(member);
   }
 
   @On("guildMemberRemove")

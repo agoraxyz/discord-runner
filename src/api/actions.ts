@@ -2,7 +2,10 @@ import {
   Channel,
   Collection,
   Guild,
+  GuildChannel,
   GuildMember,
+  MessageEmbed,
+  PartialGuildMember,
   Permissions,
   Role,
 } from "discord.js";
@@ -21,8 +24,11 @@ import {
 import {
   getErrorResult,
   getUserDiscordId,
+  getUserHash,
   getUserResult,
 } from "../utils/utils";
+import { statusUpdate } from "../service";
+import config from "../config";
 
 const manageRoles = async (
   params: ManageRolesParams,
@@ -338,6 +344,53 @@ const getCategories = async (inviteCode: string) => {
   };
 };
 
+const notifyUser = async (member: GuildMember | PartialGuildMember) => {
+  const userHash = await getUserHash(member.id);
+  const levelInfo = await statusUpdate(userHash);
+  if (levelInfo && levelInfo.length === 1) {
+    const accessedChannels = member.guild.channels.cache.filter(
+      (channel) =>
+        channel.type !== "category" &&
+        channel.permissionOverwrites.some(
+          (po) =>
+            levelInfo[0].accessedRoles.some((ar) => ar === po.id) &&
+            po.allow.has(Permissions.FLAGS.VIEW_CHANNEL)
+        )
+    );
+
+    const sortedChannels = accessedChannels.reduce<
+      Map<string | null, GuildChannel[]>
+    >((acc, value) => {
+      let channels = acc.get(value?.parent?.name);
+      if (!channels) {
+        channels = [];
+      }
+      channels.push(value);
+      acc.set(value?.parent?.name, channels);
+      return acc;
+    }, new Map());
+
+    const embed = new MessageEmbed({
+      title: `You got access to these channels in ${levelInfo[0].name}:`,
+      color: config.embedColor,
+    });
+
+    sortedChannels.forEach((channel, key) => {
+      embed.addField(
+        `>${key}`,
+        channel
+          .map(
+            (c) =>
+              `[${c.name}](https://discord.com/channels/${member.guild.id}/${c.id})`
+          )
+          .join("\n")
+      );
+    });
+
+    member.send(embed);
+  }
+};
+
 export {
   manageRoles,
   generateInvite,
@@ -351,4 +404,5 @@ export {
   createChannel,
   getCategories,
   deleteChannelAndRole,
+  notifyUser,
 };
