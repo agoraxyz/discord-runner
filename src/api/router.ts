@@ -12,6 +12,7 @@ const createRouter = () => {
     validators.roleIdsArrayValidator,
     validators.bodyDiscordId("roleIds.*"),
     validators.messageValidator,
+    validators.isGuildValidator,
     controller.upgrade
   );
 
@@ -22,6 +23,7 @@ const createRouter = () => {
     validators.roleIdsArrayValidator,
     validators.bodyDiscordId("roleIds.*"),
     validators.messageValidator,
+    validators.isGuildValidator,
     controller.downgrade
   );
 

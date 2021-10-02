@@ -29,4 +29,5 @@ export default {
     .trim()
     .isLength({ min: 1 }),
   categoryNameValidator: body("categoryName").isString().trim().optional(),
+  isGuildValidator: body("isGuild").trim().isBoolean(),
 };

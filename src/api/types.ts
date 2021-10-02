@@ -3,6 +3,7 @@ type ManageRolesParams = {
   userHash: string;
   roleIds: string[];
   message: string;
+  isGuild: string;
 };
 
 type CreateChannelParams = {

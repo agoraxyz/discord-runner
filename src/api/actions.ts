@@ -24,18 +24,71 @@ import {
 import {
   getErrorResult,
   getUserDiscordId,
-  getUserHash,
   getUserResult,
 } from "../utils/utils";
-import { statusUpdate } from "../service";
 import config from "../config";
+
+const notifyAccessedChannels = async (
+  member: GuildMember | PartialGuildMember,
+  addedRoles: Collection<string, Role>,
+  guildName: string
+) => {
+  const accessedRoles = addedRoles.map((r) => r.id);
+  const accessedChannels = member.guild.channels.cache.filter(
+    (channel) =>
+      channel.type !== "category" &&
+      channel.permissionOverwrites.some(
+        (po) =>
+          accessedRoles.some((ar) => ar === po.id) &&
+          po.allow.has(Permissions.FLAGS.VIEW_CHANNEL)
+      )
+  );
+
+  const sortedChannels = accessedChannels.reduce<
+    Map<string | null, GuildChannel[]>
+  >((acc, value) => {
+    let channels = acc.get(value?.parent?.name);
+    if (!channels) {
+      channels = [];
+    }
+    channels.push(value);
+    acc.set(value?.parent?.name, channels);
+    return acc;
+  }, new Map());
+
+  const multipleChannels = accessedChannels.size > 1;
+  const embed = new MessageEmbed({
+    title: `You got access to ${
+      multipleChannels ? "these channels" : "this channel"
+    } with the \`${guildName}\` guild in \`${member.guild.name}\`:`,
+    color: config.embedColor,
+  });
+
+  const categoryEmoji = Main.Client.emojis.cache.get("893836008712441858");
+  const privateChannelEmoji =
+    Main.Client.emojis.cache.get("893836025699377192");
+
+  sortedChannels.forEach((channel, key) => {
+    embed.addField(
+      `${categoryEmoji}${key}`,
+      channel
+        .map(
+          (c) =>
+            `[${privateChannelEmoji}${c.name}](https://discord.com/channels/${member.guild.id}/${c.id})`
+        )
+        .join("\n")
+    );
+  });
+
+  member.send(embed);
+};
 
 const manageRoles = async (
   params: ManageRolesParams,
   isUpgrade: boolean
 ): Promise<UserResult> => {
   logger.verbose(`manageRoles params: ${JSON.stringify(params)}, ${isUpgrade}`);
-  const { userHash, guildId, roleIds, message } = params;
+  const { userHash, guildId, roleIds, message, isGuild } = params;
 
   const guild = await Main.Client.guilds.fetch(guildId);
   const discordId = await getUserDiscordId(userHash);
@@ -69,7 +122,23 @@ const manageRoles = async (
       updatedMember = await member.roles.remove(rolesToManage);
     }
 
-    updatedMember.send(message).catch(logger.error);
+    if (JSON.parse(isGuild)) {
+      if (isUpgrade) {
+        await notifyAccessedChannels(updatedMember, rolesToManage, message);
+      }
+    } else {
+      updatedMember
+        .send(
+          `You ${
+            isUpgrade ? "got" : "no longer have"
+          } access to the **${rolesToManage
+            .map((r) => r.name)
+            .join("**,** ")}** level${
+            rolesToManage.size === 1 ? "" : "s"
+          } on **${message}**!`
+        )
+        .catch(logger.error);
+    }
 
     return getUserResult(updatedMember);
   }
@@ -344,53 +413,6 @@ const getCategories = async (inviteCode: string) => {
   };
 };
 
-const notifyUser = async (member: GuildMember | PartialGuildMember) => {
-  const userHash = await getUserHash(member.id);
-  const levelInfo = await statusUpdate(userHash);
-  if (levelInfo && levelInfo.length === 1) {
-    const accessedChannels = member.guild.channels.cache.filter(
-      (channel) =>
-        channel.type !== "category" &&
-        channel.permissionOverwrites.some(
-          (po) =>
-            levelInfo[0].accessedRoles.some((ar) => ar === po.id) &&
-            po.allow.has(Permissions.FLAGS.VIEW_CHANNEL)
-        )
-    );
-
-    const sortedChannels = accessedChannels.reduce<
-      Map<string | null, GuildChannel[]>
-    >((acc, value) => {
-      let channels = acc.get(value?.parent?.name);
-      if (!channels) {
-        channels = [];
-      }
-      channels.push(value);
-      acc.set(value?.parent?.name, channels);
-      return acc;
-    }, new Map());
-
-    const embed = new MessageEmbed({
-      title: `You got access to these channels in ${levelInfo[0].name}:`,
-      color: config.embedColor,
-    });
-
-    sortedChannels.forEach((channel, key) => {
-      embed.addField(
-        `>${key}`,
-        channel
-          .map(
-            (c) =>
-              `[${c.name}](https://discord.com/channels/${member.guild.id}/${c.id})`
-          )
-          .join("\n")
-      );
-    });
-
-    member.send(embed);
-  }
-};
-
 export {
   manageRoles,
   generateInvite,
@@ -404,5 +426,4 @@ export {
   createChannel,
   getCategories,
   deleteChannelAndRole,
-  notifyUser,
 };
