@@ -80,7 +80,7 @@ const notifyAccessedChannels = async (
     );
   });
 
-  member.send(embed);
+  member.send(embed).catch(logger.error);
 };
 
 const manageRoles = async (

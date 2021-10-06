@@ -37,11 +37,14 @@ abstract class Commands {
     logger.verbose(
       `status command was used by ${command.author.username}#${
         command.author.discriminator
-      } -  targeted: ${!!command.args.userHash} userHash: ${userHash} userId: ${userId}`
+      } -  targeted: ${!!command.args
+        .userHash} userHash: ${userHash} userId: ${userId}`
     );
-    command.channel.send(
-      `I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)\nYour user hash: \`${userHash}\``
-    );
+    command.channel
+      .send(
+        `I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)\nYour user hash: \`${userHash}\``
+      )
+      .catch(logger.error);
     statusUpdate(userHash)
       .then(async (levelInfo) => {
         if (levelInfo) {
@@ -97,7 +100,7 @@ abstract class Commands {
               embed.addField(c.name, c.levels.join(", "));
             }
           });
-          command.channel.send(embed);
+          command.channel.send(embed).catch(logger.error);
         } else {
           const embed = new MessageEmbed({
             title: "It seems you haven't joined any communities yet.",
@@ -105,7 +108,7 @@ abstract class Commands {
             description:
               "You can find more information in our [gitbook](https://agoraspace.gitbook.io/agoraspace/try-our-tools) or on the [Agora](https://app.agora.space/) website.",
           });
-          command.channel.send(embed);
+          command.channel.send(embed).catch(logger.error);
         }
       })
       .catch(logger.error);
