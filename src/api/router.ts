@@ -9,10 +9,8 @@ const createRouter = () => {
     "/upgrade",
     validators.bodyDiscordId("guildId"),
     validators.bodyUserHash("userHash"),
-    validators.roleIdsArrayValidator,
-    validators.bodyDiscordId("roleIds.*"),
+    validators.roleNameValidator,
     validators.messageValidator,
-    validators.isGuildValidator,
     controller.upgrade
   );
 
@@ -20,10 +18,8 @@ const createRouter = () => {
     "/downgrade",
     validators.bodyDiscordId("guildId"),
     validators.bodyUserHash("userHash"),
-    validators.roleIdsArrayValidator,
-    validators.bodyDiscordId("roleIds.*"),
+    validators.roleNameValidator,
     validators.messageValidator,
-    validators.isGuildValidator,
     controller.downgrade
   );
 
