@@ -261,9 +261,11 @@ const createChannel = async (params: CreateChannelParams) => {
   return createdChannel;
 };
 
-const deleteRole = async (guildId: string, roleId: string): Promise<Role> => {
+const deleteRole = async (guildId: string, roleName: string): Promise<Role> => {
   const guild = await Main.Client.guilds.fetch(guildId);
-  const deletedRole = guild.roles.cache.find((r) => r.id === roleId).delete();
+  const deletedRole = guild.roles.cache
+    .find((r) => r.name === roleName)
+    .delete();
   return deletedRole;
 };
 
@@ -282,10 +284,10 @@ const deleteChannelAndRole = async (
   params: DeleteChannelAndRoleParams
 ): Promise<boolean> => {
   logger.verbose(`deleteChannelAndRole params: ${JSON.stringify(params)}`);
-  const { guildId, roleId, channelName } = params;
+  const { guildId, roleName, channelName } = params;
 
   try {
-    await deleteRole(guildId, roleId);
+    await deleteRole(guildId, roleName);
     await deleteChannel(guildId, channelName);
     return true;
   } catch (error) {
