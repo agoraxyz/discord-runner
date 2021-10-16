@@ -406,6 +406,37 @@ const getCategories = async (inviteCode: string) => {
   };
 };
 
+const updateRoleByName = async (
+  guildId: string,
+  channelId: string,
+  oldRoleName: string,
+  newRoleName: string
+) => {
+  logger.verbose(
+    `updateRoleByName params: ${guildId}, ${oldRoleName}, ${newRoleName}`
+  );
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const roles = await guild.roles.cache.filter((r) => r.name === oldRoleName);
+  const channel = await guild.channels.cache.find((c) => c.id === channelId);
+  await Promise.all(
+    roles.map(async (r) => {
+      if (channel.permissionsFor(r).any("SEND_MESSAGES")) {
+        const updatedRole = await r.edit(
+          { name: newRoleName },
+          `Updated by ${Main.Client.user.username} because the Guild name changed.`
+        );
+
+        return updatedRole;
+      }
+      return undefined;
+    })
+  );
+
+  throw new Error(
+    `You can't update the ${oldRoleName} role on ${guild.name} server.`
+  );
+};
+
 export {
   manageRoles,
   generateInvite,
@@ -419,4 +450,5 @@ export {
   createChannel,
   getCategories,
   deleteChannelAndRole,
+  updateRoleByName,
 };
