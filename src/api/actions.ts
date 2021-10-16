@@ -418,7 +418,7 @@ const updateRoleByName = async (
   const guild = await Main.Client.guilds.fetch(guildId);
   const roles = await guild.roles.cache.filter((r) => r.name === oldRoleName);
   const channel = await guild.channels.cache.find((c) => c.id === channelId);
-  await Promise.all(
+  const rolesUpdated = await Promise.all(
     roles.map(async (r) => {
       if (channel.permissionsFor(r).any("SEND_MESSAGES")) {
         const updatedRole = await r.edit(
@@ -432,9 +432,7 @@ const updateRoleByName = async (
     })
   );
 
-  throw new Error(
-    `You can't update the ${oldRoleName} role on ${guild.name} server.`
-  );
+  return rolesUpdated.filter((r) => r !== undefined);
 };
 
 export {
