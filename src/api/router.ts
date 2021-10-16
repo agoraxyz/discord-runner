@@ -59,6 +59,15 @@ const createRouter = () => {
     controller.updateRole
   );
 
+  router.post(
+    "/role/byName",
+    validators.bodyDiscordId("serverId"),
+    validators.bodyDiscordId("channelId"),
+    validators.oldRoleNameValidator,
+    validators.roleNameValidator,
+    controller.updateRoleByName
+  );
+
   router.get(
     "/isIn/:guildId",
     validators.paramDiscordId("guildId"),
