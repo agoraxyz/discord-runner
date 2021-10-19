@@ -226,7 +226,7 @@ const createChannel = async (params: CreateChannelParams) => {
     );
 
     await guild.channels.cache
-      .find((c) => c.name === channelName)
+      .find((c) => c.name === createdChannel.name)
       .setParent(category.id);
   }
   // categoryName param is ID, TODO modify
