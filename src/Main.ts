@@ -34,12 +34,6 @@ class Main {
 
       await this._client.initApplicationCommands();
       await this._client.initApplicationPermissions();
-
-      logger.info(
-        `Updated slashes for ${
-          config.nodeEnv === "development" ? config.testGuildId : "all servers"
-        }.`
-      );
     });
 
     this._client.on("interactionCreate", (interaction) => {

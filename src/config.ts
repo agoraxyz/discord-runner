@@ -6,8 +6,6 @@ const envFound = dotenv.config();
   throw new Error("Couldn't find .env file or volumes in compose.");
 } */
 
-const nodeEnv = process.env.NODE_ENV || "development";
-const testGuildId = process.env.TEST_GUILD_ID;
 const redisHost = process.env.REDIS_HOST;
 const hmacAlgorithm = process.env.HMAC_ALGORITHM || "sha256";
 const hmacSecret = process.env.HMAC_SECRET;
@@ -33,13 +31,7 @@ if (!redisHost)
 if (!hmacSecret)
   throw new Error("You need to specify the HMAC_SECRET in the .env file.");
 
-if (nodeEnv === "development" && !testGuildId)
-  throw new Error(
-    "You need to specify the TEST_GUILD_ID in the .env file if it is running in a development environment."
-  );
-
 export default {
-  nodeEnv,
   redisHost,
   hmacAlgorithm,
   hmacSecret,
@@ -47,5 +39,4 @@ export default {
   backendUrl,
   api,
   embedColor,
-  testGuildId,
 };
