@@ -1,46 +1,42 @@
 /* eslint-disable class-methods-use-this */
-import { Discord, CommandMessage, Command, Guard } from "@typeit/discord";
-import { Collection, MessageEmbed, Role } from "discord.js";
+import { Discord, Slash, Option } from "@typeit/discord";
+import { CommandInteraction, MessageEmbed } from "discord.js";
 import config from "./config";
-import NotABot from "./Guards/NotABot";
 import Main from "./Main";
 import { statusUpdate } from "./service";
 import logger from "./utils/logger";
 import { getUserDiscordId, getUserHash } from "./utils/utils";
 
-@Discord(config.prefix)
+@Discord()
 abstract class Commands {
-  static commands = ["ping", "status"];
-
-  @Command("ping")
-  @Guard(NotABot)
-  ping(command: CommandMessage): void {
+  @Slash("ping")
+  ping(interaction: CommandInteraction): void {
     logger.verbose(
-      `ping command was used by ${command.author.username}#${command.author.discriminator}`
+      `ping command was used by ${interaction.user.username}#${interaction.user.discriminator}`
     );
-    command
+    interaction
       .reply(
         `Latency is ${
-          Date.now() - command.createdTimestamp
+          Date.now() - interaction.createdTimestamp
         }ms. API Latency is ${Math.round(Main.Client.ws.ping)}ms`
       )
       .catch(logger.error);
   }
 
-  @Command("status :userHash")
-  @Guard(NotABot)
-  async status(command: CommandMessage): Promise<void> {
-    const userHash = command.args.userHash
-      ? command.args.userHash
-      : await getUserHash(command.author.id);
+  @Slash("status")
+  async status(
+    @Option("userHash", { required: false, description: "Hash of a user." })
+    userHashParam: string,
+    interaction: CommandInteraction
+  ): Promise<void> {
+    const userHash = userHashParam || (await getUserHash(interaction.user.id));
     const userId = await getUserDiscordId(userHash);
     logger.verbose(
-      `status command was used by ${command.author.username}#${
-        command.author.discriminator
-      } -  targeted: ${!!command.args
-        .userHash} userHash: ${userHash} userId: ${userId}`
+      `status command was used by ${interaction.user.username}#${
+        interaction.user.discriminator
+      } -  targeted: ${!!userHashParam} userHash: ${userHash} userId: ${userId}`
     );
-    command.channel
+    interaction.channel
       .send(
         `I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)\nYour user hash: \`${userHash}\``
       )
@@ -51,17 +47,15 @@ abstract class Commands {
           await Promise.all(
             levelInfo.map(async (c) => {
               const guild = await Main.Client.guilds.fetch(c.discordServerId);
-              const member = guild.member(userId);
+              const member = guild.members.cache.get(userId);
               logger.verbose(`${JSON.stringify(member)}`);
               const roleManager = await guild.roles.fetch();
-              const rolesToAdd: Collection<string, Role> =
-                roleManager.cache.filter((role) =>
-                  c.accessedRoles?.includes(role.id)
-                );
-              const rolesToRemove: Collection<string, Role> =
-                roleManager.cache.filter((role) =>
-                  c.notAccessedRoles?.includes(role.id)
-                );
+              const rolesToAdd = roleManager.filter((role) =>
+                c.accessedRoles?.includes(role.id)
+              );
+              const rolesToRemove = roleManager.filter((role) =>
+                c.notAccessedRoles?.includes(role.id)
+              );
 
               if (rolesToAdd?.size !== c.accessedRoles.length) {
                 const missingRoleIds = c.accessedRoles.filter(
@@ -90,25 +84,25 @@ abstract class Commands {
 
           const embed = new MessageEmbed({
             author: {
-              name: `${command.author.username}'s communities and levels`,
-              iconURL: `https://cdn.discordapp.com/avatars/${userId}/${command.author.avatar}.png`,
+              name: `${interaction.user.username}'s communities and levels`,
+              iconURL: `https://cdn.discordapp.com/avatars/${userId}/${interaction.user.avatar}.png`,
             },
-            color: config.embedColor,
+            color: `#${config.embedColor}`,
           });
           levelInfo.forEach((c) => {
             if (c.levels.length) {
               embed.addField(c.name, c.levels.join(", "));
             }
           });
-          command.channel.send(embed).catch(logger.error);
+          interaction.channel.send({ embeds: [embed] }).catch(logger.error);
         } else {
           const embed = new MessageEmbed({
             title: "It seems you haven't joined any communities yet.",
-            color: config.embedColor,
+            color: `#${config.embedColor}`,
             description:
               "You can find more information in our [gitbook](https://agoraspace.gitbook.io/agoraspace/try-our-tools) or on the [Agora](https://app.agora.space/) website.",
           });
-          command.channel.send(embed).catch(logger.error);
+          interaction.channel.send({ embeds: [embed] }).catch(logger.error);
         }
       })
       .catch(logger.error);

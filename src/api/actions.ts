@@ -1,14 +1,14 @@
 import {
+  Guild,
   Channel,
   Collection,
-  Guild,
   GuildChannel,
   GuildMember,
   MessageEmbed,
   PartialGuildMember,
   Permissions,
   Role,
-} from "discord.js";
+} from "@typeit/discord/node_modules/discord.js";
 import Main from "../Main";
 import logger from "../utils/logger";
 import {
@@ -36,13 +36,14 @@ const notifyAccessedChannels = async (
   const accessedRoles = addedRoles.map((r) => r.id);
   const accessedChannels = member.guild.channels.cache.filter(
     (channel) =>
-      channel.type !== "category" &&
-      channel.permissionOverwrites.some(
+      channel.type !== "GUILD_CATEGORY" &&
+      !channel.isThread() &&
+      channel.permissionOverwrites.cache.some(
         (po) =>
           accessedRoles.some((ar) => ar === po.id) &&
           po.allow.has(Permissions.FLAGS.VIEW_CHANNEL)
       )
-  );
+  ) as Collection<string, GuildChannel>;
 
   const sortedChannels = accessedChannels.reduce<
     Map<string | null, GuildChannel[]>
@@ -61,7 +62,7 @@ const notifyAccessedChannels = async (
     title: `You got access to ${
       multipleChannels ? "these channels" : "this channel"
     } with the \`${guildName}\` guild in \`${member.guild.name}\`:`,
-    color: config.embedColor,
+    color: `#${config.embedColor}`,
   });
 
   const categoryEmoji = Main.Client.emojis.cache.get("893836008712441858");
@@ -80,7 +81,7 @@ const notifyAccessedChannels = async (
     );
   });
 
-  member.send(embed).catch(logger.error);
+  member.send({ embeds: [embed] }).catch(logger.error);
 };
 
 const manageRoles = async (
@@ -101,14 +102,10 @@ const manageRoles = async (
   const roleManager = await guild.roles.fetch();
 
   const roleIds = [
-    roleManager.cache.find(
-      (r) => r.name.toLowerCase() === roleName.toLowerCase()
-    ).id,
+    roleManager.find((r) => r.name.toLowerCase() === roleName.toLowerCase()).id,
   ];
 
-  const rolesToManage: Collection<string, Role> = roleManager.cache.filter(
-    (role) => roleIds.includes(role.id)
-  );
+  const rolesToManage = roleManager.filter((role) => roleIds.includes(role.id));
 
   if (rolesToManage.size !== roleIds.length) {
     const missingRoleIds = roleIds.filter(
@@ -153,22 +150,17 @@ const generateInvite = async (
   }
 
   const guild = await Main.Client.guilds.fetch(guildId);
-  const channel = guild.channels.cache.find((c) => c.id === inviteChannelId);
-  if (!channel) {
-    throw new ActionError("Invite channel not found.", [inviteChannelId]);
-  }
-
-  const invite = await channel.createInvite({ maxAge: 0 });
+  const invite = await guild.invites.create(inviteChannelId, { maxAge: 0 });
   logger.verbose(`generated invite code: ${invite.code}`);
 
   Main.inviteDataCache.set(guildId, {
     code: invite.code,
-    inviteChannelId: channel.id,
+    inviteChannelId,
   });
 
   if (cachedInvite && cachedInvite.inviteChannelId !== inviteChannelId) {
     logger.verbose(`deleting old invite: ${cachedInvite.code}`);
-    guild.fetchInvites().then((invites) => {
+    guild.invites.fetch().then((invites) => {
       invites
         .find((i) => i.code === cachedInvite.code)
         ?.delete()
@@ -217,29 +209,31 @@ const createChannel = async (params: CreateChannelParams) => {
   logger.verbose(`createChannel params: ${JSON.stringify(everyone)}`);
 
   const createdChannel = await guild.channels.create(channelName, {
-    type: "text",
+    type: "GUILD_TEXT",
   });
   // TODO modify  and simplify below
   if (guildId === "886314998131982336") {
     const category = guild.channels.cache.find(
-      (c) => c.name.toUpperCase() === "GUILDS-3" && c.type === "category"
+      (c) => c.name.toUpperCase() === "GUILDS-3" && c.type === "GUILD_CATEGORY"
     );
 
-    await guild.channels.cache
-      .find((c) => c.name === createdChannel.name)
-      .setParent(category.id);
+    await (
+      guild.channels.cache.find(
+        (c) => c.name === createdChannel.name && !c.isThread()
+      ) as GuildChannel
+    ).setParent(category.id);
   }
   // categoryName param is ID, TODO modify
   if (categoryName) {
     const category = guild.channels.cache.find(
-      (c) => c.id === categoryName && c.type === "category"
+      (c) => c.id === categoryName && c.type === "GUILD_CATEGORY"
     );
     if (category) {
       await createdChannel.setParent(category.id);
     }
   }
 
-  createdChannel.overwritePermissions([
+  createdChannel.permissionOverwrites.set([
     {
       id: everyone.id,
       deny: Permissions.FLAGS.VIEW_CHANNEL,
@@ -304,7 +298,8 @@ const createRole = async (
   const guild = await Main.Client.guilds.fetch(guildId);
 
   const role = await guild.roles.create({
-    data: { name: roleName, hoist: true },
+    name: roleName,
+    hoist: true,
     reason: `Created by ${Main.Client.user.username} for an Agora Space community level.`,
   });
   logger.verbose(`role created: ${role.id}`);
@@ -367,7 +362,7 @@ const listChannels = async (
   const channels = guild.channels.cache
     .filter(
       (c) =>
-        c.type === "text" &&
+        c.type === "GUILD_TEXT" &&
         c
           .permissionsFor(guild.roles.everyone)
           .has(Permissions.FLAGS.VIEW_CHANNEL)
@@ -390,7 +385,9 @@ const listAdministeredServers = async (userHash: string) => {
     throw new Error(`PlatformUserId doesn't exists for ${userHash} userHash.`);
 
   const administeredServers = Main.Client.guilds.cache
-    .filter((g) => g.member(discordId)?.hasPermission("ADMINISTRATOR"))
+    .filter((g) =>
+      g.members.cache.get(discordId)?.permissions.has("ADMINISTRATOR")
+    )
     .map((g) => ({ name: g.name, id: g.id }));
 
   logger.verbose(`listAdministeredServers result: ${administeredServers}`);
@@ -399,8 +396,9 @@ const listAdministeredServers = async (userHash: string) => {
 
 const getCategories = async (inviteCode: string) => {
   const invite = await Main.Client.fetchInvite(inviteCode);
-  const categories = invite.guild.channels.cache
-    .filter((c) => c.type === "category")
+  const guild = await Main.Client.guilds.fetch(invite.guild.id);
+  const categories = guild.channels.cache
+    .filter((c) => c.type === "GUILD_CATEGORY")
     .map((c) => ({ id: c.id, name: c.name }));
   return {
     serverId: invite.guild.id,
@@ -418,8 +416,8 @@ const updateRoleByName = async (
     `updateRoleByName params: ${guildId}, ${oldRoleName}, ${newRoleName}`
   );
   const guild = await Main.Client.guilds.fetch(guildId);
-  const roles = await guild.roles.cache.filter((r) => r.name === oldRoleName);
-  const channel = await guild.channels.cache.find((c) => c.id === channelId);
+  const roles = guild.roles.cache.filter((r) => r.name === oldRoleName);
+  const channel = guild.channels.cache.find((c) => c.id === channelId);
   const rolesUpdated = await Promise.all(
     roles.map(async (r) => {
       if (channel.permissionsFor(r).any("SEND_MESSAGES")) {
