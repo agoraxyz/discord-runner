@@ -1,9 +1,6 @@
 import { AxiosResponse } from "axios";
 import { createHmac } from "crypto";
-import {
-  DiscordAPIError,
-  GuildMember,
-} from "@typeit/discord/node_modules/discord.js";
+import { GuildMember, DiscordAPIError } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
 import redisClient from "../database";

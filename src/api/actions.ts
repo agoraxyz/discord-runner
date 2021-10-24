@@ -1,14 +1,14 @@
 import {
+  GuildMember,
+  PartialGuildMember,
+  Collection,
+  Role,
+  Permissions,
+  GuildChannel,
+  MessageEmbed,
   Guild,
   Channel,
-  Collection,
-  GuildChannel,
-  GuildMember,
-  MessageEmbed,
-  PartialGuildMember,
-  Permissions,
-  Role,
-} from "@typeit/discord/node_modules/discord.js";
+} from "discord.js";
 import Main from "../Main";
 import logger from "../utils/logger";
 import {

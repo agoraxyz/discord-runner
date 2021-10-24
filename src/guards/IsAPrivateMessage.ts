@@ -1,6 +1,6 @@
-import { ArgsOf, GuardFunction } from "@typeit/discord";
+import { ArgsOf, GuardFunction } from "discordx";
 
-const IsAPrivateMessage: GuardFunction<ArgsOf<"message">> = async (
+const IsAPrivateMessage: GuardFunction<ArgsOf<"messageCreate">> = async (
   [message],
   _,
   next

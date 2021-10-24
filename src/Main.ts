@@ -1,6 +1,6 @@
 /* eslint no-underscore-dangle: ["error", { "allowAfterThis": true }] */
-import { Client } from "@typeit/discord";
 import { Intents } from "discord.js";
+import { Client } from "discordx";
 import api from "./api/api";
 import { InviteData } from "./api/types";
 import config from "./config";
@@ -26,17 +26,14 @@ class Main {
         Intents.FLAGS.GUILD_PRESENCES,
         Intents.FLAGS.DIRECT_MESSAGES,
       ],
-      classes: [`${__dirname}/*.ts`, `${__dirname}/*.js`],
+      classes: [`${__dirname}/discords/*.{js,ts}`],
     });
-    this._client.login(config.discordToken);
 
-    this._client.once("ready", async () => {
-      if (config.nodeEnv === "development") {
-        await this._client.clearSlashes(config.testGuildId);
-      } else {
-        await this._client.clearSlashes();
-      }
-      await this._client.initSlashes();
+    this._client.on("ready", async () => {
+      logger.info(">> Bot started");
+
+      await this._client.initApplicationCommands();
+      await this._client.initApplicationPermissions();
 
       logger.info(
         `Updated slashes for ${
@@ -45,9 +42,11 @@ class Main {
       );
     });
 
-    this._client.on("interaction", (interaction) => {
-      this._client.executeSlash(interaction);
+    this._client.on("interactionCreate", (interaction) => {
+      this._client.executeInteraction(interaction);
     });
+
+    this._client.login(config.discordToken);
 
     this.inviteDataCache = new Map();
   }

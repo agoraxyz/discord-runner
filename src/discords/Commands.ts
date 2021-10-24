@@ -1,11 +1,11 @@
 /* eslint-disable class-methods-use-this */
-import { Discord, Slash, Option } from "@typeit/discord";
 import { CommandInteraction, MessageEmbed } from "discord.js";
-import config from "./config";
-import Main from "./Main";
-import { statusUpdate } from "./service";
-import logger from "./utils/logger";
-import { getUserDiscordId, getUserHash } from "./utils/utils";
+import { Discord, Slash, SlashOption } from "discordx";
+import config from "../config";
+import Main from "../Main";
+import { statusUpdate } from "../service";
+import logger from "../utils/logger";
+import { getUserDiscordId, getUserHash } from "../utils/utils";
 
 @Discord()
 abstract class Commands {
@@ -25,7 +25,10 @@ abstract class Commands {
 
   @Slash("status")
   async status(
-    @Option("userHash", { required: false, description: "Hash of a user." })
+    @SlashOption("userhash", {
+      required: false,
+      description: "Hash of a user.",
+    })
     userHashParam: string,
     interaction: CommandInteraction
   ): Promise<void> {
@@ -36,8 +39,8 @@ abstract class Commands {
         interaction.user.discriminator
       } -  targeted: ${!!userHashParam} userHash: ${userHash} userId: ${userId}`
     );
-    interaction.channel
-      .send(
+    interaction
+      .reply(
         `I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)\nYour user hash: \`${userHash}\``
       )
       .catch(logger.error);

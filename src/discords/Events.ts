@@ -1,5 +1,4 @@
 /* eslint-disable class-methods-use-this */
-import { Discord, Guard, On } from "@typeit/discord";
 import {
   GuildMember,
   Invite,
@@ -7,12 +6,13 @@ import {
   MessageEmbed,
   PartialGuildMember,
 } from "discord.js";
-import config from "./config";
-import IsAPrivateMessage from "./Guards/IsAPrivateMessage";
-import NotABot from "./Guards/NotABot";
-import Main from "./Main";
-import { userJoined, userRemoved } from "./service";
-import logger from "./utils/logger";
+import { Discord, Guard, On } from "discordx";
+import config from "../config";
+import IsAPrivateMessage from "../guards/IsAPrivateMessage";
+import NotABot from "../guards/NotABot";
+import Main from "../Main";
+import { userJoined, userRemoved } from "../service";
+import logger from "../utils/logger";
 
 @Discord()
 abstract class Events {
@@ -21,9 +21,8 @@ abstract class Events {
     logger.info("Bot logged in.");
   }
 
-  @On("message")
-  @Guard(NotABot)
-  @Guard(IsAPrivateMessage)
+  @On("messageCreate")
+  @Guard(NotABot, IsAPrivateMessage)
   onPrivateMessage(messages: [Message]): void {
     messages.forEach((message) => {
       logger.verbose(
