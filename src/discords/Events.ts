@@ -10,6 +10,7 @@ import { Discord, Guard, On } from "discordx";
 import config from "../config";
 import IsAPrivateMessage from "../guards/IsAPrivateMessage";
 import NotABot from "../guards/NotABot";
+import NotACommand from "../guards/NotACommand";
 import Main from "../Main";
 import { userJoined, userRemoved } from "../service";
 import logger from "../utils/logger";
@@ -22,53 +23,52 @@ abstract class Events {
   }
 
   @On("messageCreate")
-  @Guard(NotABot, IsAPrivateMessage)
-  onPrivateMessage(messages: [Message]): void {
-    messages.forEach((message) => {
-      logger.verbose(
-        `unkown request: ${message.author.username}#${message.author.discriminator}: ${message.content}`
-      );
-      const embed = new MessageEmbed({
-        title: "I'm sorry, but I couldn't interpret your request.",
-        color: `#${config.embedColor}`,
-        description:
-          "You can find more information in our [gitbook](https://agoraspace.gitbook.io/agoraspace/try-our-tools) or on the [Agora](https://app.agora.space/) website.",
-      });
-      message.channel.send({ embeds: [embed] }).catch(logger.error);
+  @Guard(NotABot, IsAPrivateMessage, NotACommand)
+  onPrivateMessage([message]: [Message]): void {
+    logger.verbose(
+      `unkown request: ${message.author.username}#${message.author.discriminator}: ${message.content}`
+    );
+    const embed = new MessageEmbed({
+      title: "I'm sorry, but I couldn't interpret your request.",
+      color: `#${config.embedColor}`,
+      description:
+        "You can find more information in our [gitbook](https://agoraspace.gitbook.io/agoraspace/try-our-tools) or on the [Agora](https://app.agora.space/) website.",
     });
+    message.channel.send({ embeds: [embed] }).catch(logger.error);
   }
 
   @On("guildMemberAdd")
-  onGuildMemberAdd(members: [GuildMember | PartialGuildMember]): void {
-    const [member] = members;
+  onGuildMemberAdd([member]: [GuildMember | PartialGuildMember]): void {
     userJoined(member.user.id, member.guild.id);
   }
 
   @On("guildMemberRemove")
-  onGuildMemberRemove(members: [GuildMember | PartialGuildMember]): void {
-    members.forEach((member) => {
-      userRemoved(member.user.id, member.guild.id);
-    });
+  onGuildMemberRemove([member]: [GuildMember | PartialGuildMember]): void {
+    userRemoved(member.user.id, member.guild.id);
   }
 
   @On("inviteDelete")
-  onInviteDelete(invite: [Invite]): void {
-    Main.Client.guilds.fetch(invite[0].guild.id).then((guild) => {
+  onInviteDelete([invite]: [Invite]): void {
+    Main.Client.guilds.fetch(invite.guild.id).then((guild) => {
       logger.verbose(`onInviteDelete guild: ${guild.name}`);
 
       const inviteChannelId = Main.inviteDataCache.get(
         guild.id
       )?.inviteChannelId;
 
-      guild.invites.create(inviteChannelId, { maxAge: 0 }).then((newInvite) => {
-        Main.inviteDataCache.set(guild.id, {
-          code: newInvite.code,
-          inviteChannelId,
-        });
-        logger.verbose(
-          `invite code cache updated: ${guild.id}, ${newInvite.code}`
-        );
-      });
+      if (inviteChannelId) {
+        guild.invites
+          .create(inviteChannelId, { maxAge: 0 })
+          .then((newInvite) => {
+            Main.inviteDataCache.set(guild.id, {
+              code: newInvite.code,
+              inviteChannelId,
+            });
+            logger.verbose(
+              `invite code cache updated: ${guild.id}, ${newInvite.code}`
+            );
+          });
+      }
     });
   }
 }
