@@ -27,6 +27,7 @@ class Main {
         Intents.FLAGS.DIRECT_MESSAGES,
       ],
       classes: [`${__dirname}/discords/*.{js,ts}`],
+      partials: ["CHANNEL"],
     });
 
     this._client.on("ready", async () => {
@@ -34,6 +35,12 @@ class Main {
 
       await this._client.initApplicationCommands();
       await this._client.initApplicationPermissions();
+    });
+
+    this._client.on("messageCreate", (message) => {
+      if (!message.author.bot) {
+        this._client.executeCommand(message);
+      }
     });
 
     this._client.on("interactionCreate", (interaction) => {
