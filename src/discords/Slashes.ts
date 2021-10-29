@@ -3,6 +3,7 @@ import { CommandInteraction, User } from "discord.js";
 import { Discord, Slash, SlashOption } from "discordx";
 import { ping, status } from "../commands";
 import Main from "../Main";
+import { userJoined } from "../service";
 import logger from "../utils/logger";
 import { getUserDiscordId, getUserHash } from "../utils/utils";
 
@@ -52,6 +53,20 @@ abstract class Slashes {
 
     const embed = await status(user, userHash);
     interaction.channel.send({ embeds: [embed] }).catch(logger.error);
+  }
+
+  @Slash("join")
+  async join(interaction: CommandInteraction) {
+    logger.verbose(
+      `/join command was used by ${interaction.user.username}#${interaction.user.discriminator}`
+    );
+
+    const success = await userJoined(interaction.user.id, interaction.guild.id);
+    if (success) {
+      interaction.reply("✅ Command executed successfully.");
+    } else {
+      interaction.reply("❌ The backend couldn't handle the request.");
+    }
   }
 }
 
