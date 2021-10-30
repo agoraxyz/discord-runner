@@ -1,7 +1,7 @@
 import { MessageEmbed, User } from "discord.js";
 import config from "./config";
 import Main from "./Main";
-import { statusUpdate } from "./service";
+import { statusUpdate, userJoined } from "./service";
 import logger from "./utils/logger";
 
 const ping = (createdTimestamp: number) =>
@@ -71,4 +71,23 @@ const status = async (user: User, userHash: string) => {
   });
 };
 
-export { ping, status };
+const join = async (userId: string, guildId: string) => {
+  const channelIds = await userJoined(userId, guildId);
+
+  let message: string;
+  if (channelIds && channelIds.length !== 0) {
+    if (channelIds.length === 1) {
+      message = `✅ You got access to this channel: <#${channelIds[0]}>`;
+    } else {
+      message = `✅ You got access to these channels:\n${channelIds
+        .map((c: string) => `<#${c}>`)
+        .join("\n")}`;
+    }
+  } else {
+    message = "❌ You don't have access to any guilds in this server.";
+  }
+
+  return message;
+};
+
+export { ping, status, join };

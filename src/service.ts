@@ -7,10 +7,7 @@ import { getUserHash, logAxiosResponse, logBackendError } from "./utils/utils";
 const API_BASE_URL = config.backendUrl;
 const PLATFORM = "DISCORD";
 
-const userJoined = async (
-  platformUserId: string,
-  serverId: string
-): Promise<boolean> => {
+const userJoined = async (platformUserId: string, serverId: string) => {
   logger.verbose(`userJoined params: ${platformUserId}, ${serverId}`);
   try {
     const userHash = await getUserHash(platformUserId);
@@ -22,11 +19,11 @@ const userJoined = async (
     });
     logger.verbose(`joinedPlatform result:`);
     logAxiosResponse(response);
-    return true;
+    return response.data;
   } catch (error) {
     logger.verbose("joinedPlatform error");
     logBackendError(error);
-    return false;
+    return null;
   }
 };
 
