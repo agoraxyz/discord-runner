@@ -84,9 +84,7 @@ abstract class Slashes {
       return;
     }
 
-    interaction.deferReply();
-
-    const pages = await guilds();
+    const pages = await guilds(interaction.guild.id);
     if (!pages) {
       interaction.reply("❌ The backend couldn't handle the request.");
       return;

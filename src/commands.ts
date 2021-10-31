@@ -90,8 +90,8 @@ const join = async (userId: string, guildId: string) => {
   return message;
 };
 
-const guilds = async () => {
-  const guildsResult = await getGuildsOfServer("886314998131982336");
+const guilds = async (serverId: string) => {
+  const guildsResult = await getGuildsOfServer(serverId);
   if (!guildsResult) {
     return null;
   }
