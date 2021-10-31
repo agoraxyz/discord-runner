@@ -1,5 +1,5 @@
 /* eslint no-underscore-dangle: ["error", { "allowAfterThis": true }] */
-import { Intents } from "discord.js";
+import { Intents, MessageComponentInteraction } from "discord.js";
 import { Client } from "discordx";
 import api from "./api/api";
 import { InviteData } from "./api/types";
@@ -45,6 +45,12 @@ class Main {
     });
 
     this._client.on("interactionCreate", (interaction) => {
+      if (
+        interaction instanceof MessageComponentInteraction &&
+        interaction.customId?.startsWith("discordx@pagination@")
+      ) {
+        return;
+      }
       this._client.executeInteraction(interaction);
     });
 

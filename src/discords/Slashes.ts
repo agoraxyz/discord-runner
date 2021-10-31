@@ -1,14 +1,17 @@
 /* eslint-disable class-methods-use-this */
 import { CommandInteraction, User } from "discord.js";
 import { Discord, Slash, SlashOption } from "discordx";
-import { join, ping, status } from "../commands";
+import { Pagination } from "@discordx/utilities";
+import { guilds, join, ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
 import { getUserDiscordId, getUserHash } from "../utils/utils";
 
 @Discord()
 abstract class Slashes {
-  @Slash("ping")
+  @Slash("ping", {
+    description: "Get the latency of the bot and the discord API.",
+  })
   ping(interaction: CommandInteraction): void {
     logger.verbose(
       `/ping command was used by ${interaction.user.username}#${interaction.user.discriminator}`
@@ -70,6 +73,35 @@ abstract class Slashes {
     const message = await join(interaction.user.id, interaction.guild.id);
 
     interaction.reply(message);
+  }
+
+  @Slash("guilds")
+  async guilds(interaction: CommandInteraction) {
+    if (interaction.channel.type === "DM") {
+      interaction.reply(
+        "Use this command in a server to list all of its guilds!"
+      );
+      return;
+    }
+
+    interaction.deferReply();
+
+    const pages = await guilds();
+    if (!pages) {
+      interaction.reply("❌ The backend couldn't handle the request.");
+      return;
+    }
+
+    new Pagination(
+      interaction,
+      pages,
+      pages.length <= 10
+        ? { type: "BUTTON" }
+        : {
+            type: "SELECT_MENU",
+            pageText: pages.map((p) => `${p.title} ({page}/${pages.length})`),
+          }
+    ).send();
   }
 }
 

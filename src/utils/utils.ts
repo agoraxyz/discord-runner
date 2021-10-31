@@ -85,6 +85,9 @@ const getUserDiscordId = async (
   return platformUserId || undefined;
 };
 
+const isNumber = (value: any) =>
+  typeof value === "number" && Number.isFinite(value);
+
 export {
   getUserResult,
   getErrorResult,
@@ -92,4 +95,5 @@ export {
   logAxiosResponse,
   getUserHash,
   getUserDiscordId,
+  isNumber,
 };
