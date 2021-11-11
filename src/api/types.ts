@@ -1,7 +1,7 @@
 type ManageRolesParams = {
   guildId: string;
   userHash: string;
-  roleName: string;
+  roleId: string;
   message: string;
 };
 
@@ -14,7 +14,7 @@ type CreateChannelParams = {
 
 type DeleteChannelAndRoleParams = {
   guildId: string;
-  roleName: string;
+  roleId: string;
   channelName: string;
 };
 
