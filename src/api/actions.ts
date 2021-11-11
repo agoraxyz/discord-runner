@@ -89,7 +89,7 @@ const manageRoles = async (
   isUpgrade: boolean
 ): Promise<UserResult> => {
   logger.verbose(`manageRoles params: ${JSON.stringify(params)}, ${isUpgrade}`);
-  const { userHash, guildId, roleName, message } = params;
+  const { userHash, guildId, roleId, message } = params;
 
   const guild = await Main.Client.guilds.fetch(guildId);
   const discordId = await getUserDiscordId(userHash);
@@ -101,11 +101,7 @@ const manageRoles = async (
 
   const roleManager = await guild.roles.fetch();
 
-  const roleIds = [
-    roleManager.cache.find(
-      (r) => r.name.toLowerCase() === roleName.toLowerCase()
-    ).id,
-  ];
+  const roleIds = [roleManager.cache.find((r) => r.id === roleId).id];
 
   const rolesToManage: Collection<string, Role> = roleManager.cache.filter(
     (role) => roleIds.includes(role.id)
@@ -113,14 +109,14 @@ const manageRoles = async (
 
   if (rolesToManage.size !== roleIds.length) {
     const missingRoleIds = roleIds.filter(
-      (roleId) => !rolesToManage.map((role) => role.id).includes(roleId)
+      (id) => !rolesToManage.map((role) => role.id).includes(id)
     );
     throw new ActionError("missing role(s)", missingRoleIds);
   }
 
   if (
-    (isUpgrade && roleIds.some((roleId) => !member.roles.cache.has(roleId))) ||
-    (!isUpgrade && roleIds.some((roleId) => member.roles.cache.has(roleId)))
+    (isUpgrade && roleIds.some((id) => !member.roles.cache.has(id))) ||
+    (!isUpgrade && roleIds.some((id) => member.roles.cache.has(id)))
   ) {
     let updatedMember: GuildMember;
     if (isUpgrade) {
@@ -262,11 +258,9 @@ const createChannel = async (params: CreateChannelParams) => {
   return createdChannel;
 };
 
-const deleteRole = async (guildId: string, roleName: string): Promise<Role> => {
+const deleteRole = async (guildId: string, roleId: string): Promise<Role> => {
   const guild = await Main.Client.guilds.fetch(guildId);
-  const deletedRole = guild.roles.cache
-    .find((r) => r.name === roleName)
-    .delete();
+  const deletedRole = guild.roles.cache.find((r) => r.id === roleId).delete();
   return deletedRole;
 };
 
@@ -285,10 +279,10 @@ const deleteChannelAndRole = async (
   params: DeleteChannelAndRoleParams
 ): Promise<boolean> => {
   logger.verbose(`deleteChannelAndRole params: ${JSON.stringify(params)}`);
-  const { guildId, roleName, channelName } = params;
+  const { guildId, roleId, channelName } = params;
 
   try {
-    await deleteRole(guildId, roleName);
+    await deleteRole(guildId, roleId);
     await deleteChannel(guildId, channelName);
     return true;
   } catch (error) {
@@ -327,7 +321,7 @@ const updateRoleName = async (
 
   const updatedRole = await role.edit(
     { name: newRoleName },
-    `Updated by ${Main.Client.user.username} because the level name changed in Agora Space.`
+    `Updated by ${Main.Client.user.username} because the role name has changed in Guild.`
   );
 
   return updatedRole;
@@ -409,35 +403,6 @@ const getCategories = async (inviteCode: string) => {
   };
 };
 
-const updateRoleByName = async (
-  guildId: string,
-  channelId: string,
-  oldRoleName: string,
-  newRoleName: string
-) => {
-  logger.verbose(
-    `updateRoleByName params: ${guildId}, ${oldRoleName}, ${newRoleName}`
-  );
-  const guild = await Main.Client.guilds.fetch(guildId);
-  const roles = await guild.roles.cache.filter((r) => r.name === oldRoleName);
-  const channel = await guild.channels.cache.find((c) => c.id === channelId);
-  const rolesUpdated = await Promise.all(
-    roles.map(async (r) => {
-      if (channel.permissionsFor(r).any("SEND_MESSAGES")) {
-        const updatedRole = await r.edit(
-          { name: newRoleName },
-          `Updated by ${Main.Client.user.username} because the Guild name changed.`
-        );
-
-        return updatedRole;
-      }
-      return undefined;
-    })
-  );
-
-  return rolesUpdated.filter((r) => r !== undefined);
-};
-
 export {
   manageRoles,
   generateInvite,
@@ -451,5 +416,4 @@ export {
   createChannel,
   getCategories,
   deleteChannelAndRole,
-  updateRoleByName,
 };

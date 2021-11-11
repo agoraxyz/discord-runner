@@ -13,7 +13,6 @@ import {
   listChannels,
   manageRoles,
   removeUser,
-  updateRoleByName,
   updateRoleName,
 } from "./actions";
 import {
@@ -144,23 +143,6 @@ const controller = {
 
     const { serverId, roleId, roleName } = req.body;
     updateRoleName(serverId, roleId, roleName)
-      .then(() => res.status(200).send())
-      .catch((error) => {
-        const errorMsg = getErrorResult(error);
-        res.status(400).json(errorMsg);
-      });
-  },
-
-  updateRoleByName: (req: Request, res: Response): void => {
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-
-    const { serverId, channelId, oldRoleName, roleName } = req.body;
-    updateRoleByName(serverId, channelId, oldRoleName, roleName)
       .then(() => res.status(200).send())
       .catch((error) => {
         const errorMsg = getErrorResult(error);
