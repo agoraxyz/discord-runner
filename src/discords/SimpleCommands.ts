@@ -6,14 +6,14 @@ import {
   SimpleCommandMessage,
   SimpleCommandOption,
 } from "discordx";
-import { join, ping, status } from "../commands";
+import { ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
 import { getUserDiscordId, getUserHash } from "../utils/utils";
 
 @Discord()
 abstract class SimpleCommands {
-  static commands = ["ping", "status", "join"];
+  static commands = ["ping", "status"];
 
   @SimpleCommand("ping")
   ping(command: SimpleCommandMessage): void {
@@ -59,27 +59,6 @@ abstract class SimpleCommands {
 
     const embed = await status(user, userHash);
     command.message.reply({ embeds: [embed] }).catch(logger.error);
-  }
-
-  @SimpleCommand("join")
-  async join(command: SimpleCommandMessage) {
-    if (command.message.channel.type === "DM") {
-      command.message.reply(
-        "Use this command in a server to join all of its guilds you have access to!"
-      );
-      return;
-    }
-
-    logger.verbose(
-      `${command.prefix}join command was used by ${command.message.author.username}#${command.message.author.discriminator}`
-    );
-
-    const message = await join(
-      command.message.author.id,
-      command.message.guild.id
-    );
-
-    command.message.reply(message);
   }
 }
 
