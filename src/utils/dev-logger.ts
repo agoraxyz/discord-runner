@@ -4,7 +4,12 @@ const { printf, combine, colorize, timestamp, errors } = format;
 
 const createDevLogger = () => {
   const devLogFormat = printf(
-    (log) => `${log.timestamp} ${log.level}: ${log.stack || log.message}`
+    (log) =>
+      `${log.timestamp} ${log.level}: ${
+        log.stack || typeof log.message === "object"
+          ? JSON.stringify(log.message)
+          : log.message
+      }`
   );
   return createLogger({
     level: "verbose",
