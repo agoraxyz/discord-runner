@@ -1,5 +1,10 @@
 /* eslint-disable class-methods-use-this */
-import { CommandInteraction, User } from "discord.js";
+import {
+  CommandInteraction,
+  MessageActionRow,
+  MessageButton,
+  User,
+} from "discord.js";
 import { Discord, Slash, SlashOption } from "discordx";
 import { Pagination } from "@discordx/utilities";
 import { guilds, join, ping, status } from "../commands";
@@ -72,7 +77,7 @@ abstract class Slashes {
 
     const message = await join(interaction.user.id, interaction.guild.id);
 
-    interaction.reply(message);
+    interaction.reply({ content: message, ephemeral: true });
   }
 
   @Slash("guilds")
@@ -100,6 +105,32 @@ abstract class Slashes {
             pageText: pages.map((p) => `${p.title} ({page}/${pages.length})`),
           }
     ).send();
+  }
+
+  @Slash("join-button")
+  async joinButton(interaction: CommandInteraction) {
+    if (interaction.channel.type === "DM") {
+      interaction.reply("Use this command in a server to spawn a join button!");
+      return;
+    }
+
+    const button = new MessageButton({
+      customId: "join-button",
+      label: "Join guilds",
+      emoji: "🔗",
+      style: "PRIMARY",
+    });
+    const row = new MessageActionRow({ components: [button] });
+
+    await interaction.channel.send({
+      content: "Click the button to join guilds!",
+      components: [row],
+    });
+
+    await interaction.reply({
+      content: "Join button created successfully.",
+      ephemeral: true,
+    });
   }
 }
 

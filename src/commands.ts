@@ -83,8 +83,10 @@ const join = async (userId: string, guildId: string) => {
         .map((c: string) => `<#${c}>`)
         .join("\n")}`;
     }
-  } else {
+  } else if (channelIds) {
     message = "❌ You don't have access to any guilds in this server.";
+  } else {
+    message = `https://alpha.guild.xyz/connect/${userId}`;
   }
 
   return message;
