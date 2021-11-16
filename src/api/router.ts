@@ -44,6 +44,18 @@ const createRouter = () => {
     controller.removeUser
   );
 
+  router.get(
+    "/:roleId",
+    validators.paramDiscordId("guildId"),
+    controller.getGuildNameByGuildId
+  );
+
+  router.get(
+    "/role/:roleId",
+    validators.paramDiscordId("roleId"),
+    controller.getRoleNameByRoleId
+  );
+
   router.post(
     "/role",
     validators.bodyDiscordId("serverId"),
