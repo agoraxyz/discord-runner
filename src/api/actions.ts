@@ -403,6 +403,17 @@ const getCategories = async (inviteCode: string) => {
   };
 };
 
+const getGuild = async (guildId: string) => {
+  const guild = await Main.Client.guilds.fetch(guildId);
+  return guild;
+};
+
+
+const getRole = async (roleId: string) => {
+  // Placeholder TODO
+  return 1;
+};
+
 export {
   manageRoles,
   generateInvite,
@@ -415,5 +426,7 @@ export {
   listAdministeredServers,
   createChannel,
   getCategories,
+  getGuild,
+  getRole,
   deleteChannelAndRole,
 };

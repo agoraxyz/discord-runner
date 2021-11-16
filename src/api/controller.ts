@@ -269,6 +269,43 @@ const controller = {
       res.status(400).json(errorMsg);
     }
   },
+
+  getGuildNameByGuildId: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      const { guildId } = req.params;
+      const guild = await getGuild(guildId);
+
+      res.status(200).json(guild.name);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
+  },
+
+
+  getRoleNameByRoleId: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      const { roleId } = req.params;
+      const role = await getRole(roleId);
+
+      res.status(200).json(role.name);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
+  },
 };
 
 export default controller;
