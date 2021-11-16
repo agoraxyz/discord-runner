@@ -92,13 +92,13 @@ const join = async (userId: string, guildId: string) => {
   return message;
 };
 
-const guilds = async (serverId: string) => {
+const guilds = async (serverId: string): Promise<MessageEmbed[]> => {
   const guildsResult = await getGuildsOfServer(serverId);
   if (!guildsResult) {
     return null;
   }
 
-  const pages = guildsResult.map(
+  const pages: MessageEmbed[] = guildsResult.map(
     (g, i) =>
       new MessageEmbed({
         title: g.name,

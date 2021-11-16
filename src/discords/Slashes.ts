@@ -95,16 +95,22 @@ abstract class Slashes {
       return;
     }
 
-    new Pagination(
-      interaction,
-      pages,
-      pages.length <= 10
-        ? { type: "BUTTON" }
-        : {
-            type: "SELECT_MENU",
-            pageText: pages.map((p) => `${p.title} ({page}/${pages.length})`),
-          }
-    ).send();
+    if (pages.length === 0) {
+      interaction.reply("❌ There are no guilds associated with this server.");
+    } else if (pages.length === 1) {
+      interaction.reply({ embeds: [pages[0]] });
+    } else {
+      new Pagination(
+        interaction,
+        pages,
+        pages.length <= 10
+          ? { type: "BUTTON" }
+          : {
+              type: "SELECT_MENU",
+              pageText: pages.map((p) => `${p.title} ({page}/${pages.length})`),
+            }
+      ).send();
+    }
   }
 
   @Slash("join-button")
