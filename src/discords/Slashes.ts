@@ -11,6 +11,7 @@ import { guilds, join, ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
 import { getUserDiscordId, getUserHash } from "../utils/utils";
+import { guildStatusUpdate } from "../service";
 
 @Discord()
 abstract class Slashes {
@@ -60,6 +61,28 @@ abstract class Slashes {
 
     const embed = await status(user, userHash);
     interaction.channel.send({ embeds: [embed] }).catch(logger.error);
+  }
+
+  @Slash("guild-status")
+  async guildStatus(
+    @SlashOption("guildid", {
+      required: false,
+      description: "Id of a guild",
+    })
+    guildId: number,
+    interaction: CommandInteraction
+  ): Promise<void> {
+    logger.verbose(
+      `guildStatus command was used by ${interaction.user.username}#${interaction.user.discriminator} guildId: ${guildId}`
+    );
+    interaction
+      .reply(
+        `I'll update the whole Guild accesses as soon as possible. (\nGuildID: \`${guildId}\``
+      )
+      .catch(logger.error);
+    guildStatusUpdate(+guildId)
+      .then()
+      .catch(logger.error);
   }
 
   @Slash("join")

@@ -12,7 +12,8 @@ services:
       - .env
     networks:
       - runner-discord
-      - redis-discord
+      - redis-discord-outer
+    #      - redis-discord
     ports:
       - 8990:8990
 
@@ -27,13 +28,16 @@ services:
     env_file:
       - redis.env
     networks:
-      - redis-discord
+      #      - redis-discord
+      - redis-discord-outer
     volumes:
       - redis-persistence:/bitnami/redis/data
 
 networks:
-  redis-discord:
+  #  redis-discord:
   runner-discord:
+    external: true
+  redis-discord-outer:
     external: true
 
 volumes:

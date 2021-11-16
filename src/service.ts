@@ -67,9 +67,29 @@ const getGuildsOfServer = async (serverId: string) => {
     return response.data;
   } catch (error) {
     logger.verbose("getGuildsOfServer error");
+    return [];
+  }
+};
+
+const guildStatusUpdate = async (guildId: number): Promise<boolean> => {
+  logger.verbose(`guildStatusUpdate: ${guildId}`);
+  try {
+    const response = await axios.post(`${API_BASE_URL}/guild/statusUpdate`, {
+      guildId,
+    });
+    logAxiosResponse(response);
+    return response.data;
+  } catch (error) {
+    logger.verbose("guildStatusUpdate error");
     logBackendError(error);
     return undefined;
   }
 };
 
-export { userJoined, userRemoved, statusUpdate, getGuildsOfServer };
+export {
+  userJoined,
+  userRemoved,
+  statusUpdate,
+  getGuildsOfServer,
+  guildStatusUpdate,
+};
