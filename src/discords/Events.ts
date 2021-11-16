@@ -32,7 +32,7 @@ abstract class Events {
       title: "I'm sorry, but I couldn't interpret your request.",
       color: `#${config.embedColor}`,
       description:
-        "You can find more information in our [gitbook](https://agoraspace.gitbook.io/agoraspace/try-our-tools) or on the [Agora](https://app.agora.space/) website.",
+        "You can find more information on [agora.xyz](https://agora.xyz) or on [alpha.guild.xyz](https://alpha.guild.xyz).",
     });
     message.channel.send({ embeds: [embed] }).catch(logger.error);
   }
