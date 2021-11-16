@@ -11,7 +11,8 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["es2017", "esnext.asynciterable"],
     "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "exclude": ["node_modules"]
 }

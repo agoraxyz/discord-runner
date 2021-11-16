@@ -1,4 +1,4 @@
-FROM node:15.14.0 AS builder
+FROM node:17 AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY ./src ./src
 RUN npm ci --quiet && npm run build
 
 #
-FROM node:15.14.0-alpine3.12
+FROM node:17-alpine3.12
 
 
 RUN apk update --no-cache \
