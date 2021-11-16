@@ -45,13 +45,14 @@ const createRouter = () => {
   );
 
   router.get(
-    "/:roleId",
+    "/:guildId",
     validators.paramDiscordId("guildId"),
     controller.getGuildNameByGuildId
   );
 
   router.get(
-    "/role/:roleId",
+    "/role/:guildId/:roleId",
+    validators.paramDiscordId("guildId"),
     validators.paramDiscordId("roleId"),
     controller.getRoleNameByRoleId
   );

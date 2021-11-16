@@ -409,9 +409,10 @@ const getGuild = async (guildId: string) => {
 };
 
 
-const getRole = async (roleId: string) => {
-  // Placeholder TODO
-  return 1;
+const getRole = async (guildId: string, roleId: string) => {
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const role = guild.roles.cache.find((r) => r.id === roleId)
+  return {serverName: guild.name, roleName: role.name};
 };
 
 export {

@@ -7,6 +7,8 @@ import {
   deleteChannelAndRole,
   generateInvite,
   getCategories,
+  getGuild,
+  getRole,
   isIn,
   isMember,
   listAdministeredServers,
@@ -297,10 +299,9 @@ const controller = {
       return;
     }
     try {
-      const { roleId } = req.params;
-      const role = await getRole(roleId);
-
-      res.status(200).json(role.name);
+      const { guildId, roleId } = req.params;
+      const result = await getRole(guildId, roleId);
+      res.status(200).json(result);
     } catch (error) {
       const errorMsg = getErrorResult(error);
       res.status(400).json(errorMsg);
