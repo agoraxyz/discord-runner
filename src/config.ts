@@ -16,7 +16,7 @@ const api = {
   port: process.env.PORT || 8990,
 };
 const embedColor = process.env.EMBED_COLOR || "6366f1";
-const guildUrl = "https://alpha.guild.xyz";
+const guildUrl = process.env.GUILD_URL;
 
 if (!discordToken)
   throw new Error(
