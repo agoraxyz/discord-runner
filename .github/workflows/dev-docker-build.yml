@@ -1,0 +1,84 @@
+name: Docker
+
+on:
+  push:
+    # Publish `master` as Docker `latest` image.
+    branches:
+      - develop
+
+    # Publish `v1.2.3` tags as releases.
+    tags:
+      - v*
+
+  # Run tests for any PRs.
+  pull_request:
+
+env:
+  # TODO: Change variable to your image's name.
+  IMAGE_NAME: discord-runner
+
+jobs:
+  # Run tests.
+  # See also https://docs.docker.com/docker-hub/builds/automated-testing/
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run tests 
+        run: |
+          if [ -f docker-compose.test.yml ]; then
+            docker-compose --file docker-compose.test.yml build 
+          else
+            docker build . --file Dockerfile
+          fi
+      
+  # Push image to GitHub Packages.
+  # See also https://docs.docker.com/docker-hub/builds/
+  push:
+    # Ensure test job passes before pushing image.
+    needs: test
+
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build image
+        run: docker build . --file Dockerfile --tag $IMAGE_NAME:main
+
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Log into own registry
+        run: echo "${{ secrets.DOCKER_API_TOKEN }}" | docker login ${{ secrets.DOCKER_REPO }} -u '${{ secrets.DOCKER_LOGIN_NAME }}' --password-stdin
+
+      - name: Tag, check and push the images to Github Container Registry and my Harbor Container Registry
+        run: |
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          IMAGE_ID_2=${{ secrets.DOCKER_REPO }}/${{ secrets.DOCKER_LOGIN_NAME }}/$IMAGE_NAME
+
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          IMAGE_ID_2=$(echo $IMAGE_ID_2 | tr '[A-Z]' '[a-z]')
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "master" ] && VERSION=latest
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo IMAGE_ID_2=$IMAGE_ID_2
+          echo VERSION=$VERSION
+          docker tag $IMAGE_NAME:dev $IMAGE_ID:$VERSION
+          docker tag $IMAGE_NAME:dev $IMAGE_ID_2:$VERSION
+      
+          DIVE_VERSION=v0.10
+          docker pull wagoodman/dive:$DIVE_VERSION
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock --mount type=bind,source="$(pwd)"/.dive-ci,target=/.dive-ci,readonly wagoodman/dive:$DIVE_VERSION --ci $IMAGE_ID:$VERSION --ci-config /.dive-ci
+
+          docker push $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID_2:$VERSION
