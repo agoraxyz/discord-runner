@@ -211,18 +211,15 @@ const createChannel = async (params: CreateChannelParams) => {
   const createdChannel = await guild.channels.create(channelName, {
     type: "GUILD_TEXT",
   });
-  // TODO modify  and simplify below
-  if (guildId === "886314998131982336") {
-    const category = guild.channels.cache.find(
-      (c) => c.name.toUpperCase() === "GUILDS-3" && c.type === "GUILD_CATEGORY"
-    );
+  const category = guild.channels.cache.find(
+    (c) => c.name.toUpperCase() === "GUILDS-3" && c.type === "GUILD_CATEGORY"
+  );
 
-    await (
-      guild.channels.cache.find(
-        (c) => c.name === createdChannel.name && !c.isThread()
-      ) as GuildChannel
-    ).setParent(category.id);
-  }
+  await (
+    guild.channels.cache.find(
+      (c) => c.name === createdChannel.name && !c.isThread()
+    ) as GuildChannel
+  ).setParent(category.id);
 
   createdChannel.permissionOverwrites.set([
     {
@@ -409,6 +406,14 @@ const getRole = async (guildId: string, roleId: string) => {
   return { serverName: guild.name, roleName: role.name };
 };
 
+const sendJoinButton = async (guildId: string, channelId: string) => {
+  const guild = await Main.Client.guilds.fetch(guildId);
+  // eslint-disable-next-line no-unused-vars
+  const channel = guild.channels.cache.find((c) => c.id === channelId);
+  // TODO send join-button to channel
+  return true;
+};
+
 export {
   manageRoles,
   generateInvite,
@@ -424,4 +429,5 @@ export {
   getGuild,
   getRole,
   deleteChannelAndRole,
+  sendJoinButton,
 };

@@ -16,6 +16,7 @@ import {
   manageRoles,
   removeUser,
   updateRoleName,
+  sendJoinButton,
 } from "./actions";
 import {
   CreateChannelParams,
@@ -300,6 +301,26 @@ const controller = {
     try {
       const { guildId, roleId } = req.params;
       const result = await getRole(guildId, roleId);
+      res.status(200).json(result);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
+  },
+
+  sendJoinButtonToChannel: async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      const { guildId, channelId } = req.params;
+      const result = await sendJoinButton(guildId, channelId);
       res.status(200).json(result);
     } catch (error) {
       const errorMsg = getErrorResult(error);
