@@ -1,0 +1,99 @@
+name: Branch based docker build and publish
+
+on:
+  push: 
+    branches:
+
+    tags:
+      - v*
+
+  pull_request:
+
+env:
+  #IMAGE_NAME: agora-backend
+  DIVE_VERSION: v0.10
+
+jobs:
+  scanning:
+    name: GitGuardian scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # fetch all history so multiple commits can be scanned
+      - name: GitGuardian scan
+        uses: GitGuardian/gg-shield-action@master
+        env:
+          GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
+          GITHUB_PUSH_BASE_SHA: ${{ github.event.base }}
+          GITHUB_PULL_BASE_SHA:  ${{ github.event.pull_request.base.sha }}
+          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+  test:
+    name: Test container build
+    needs: scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run tests 
+        run: |
+          if [ -f docker-compose.test.yml ]; then
+            docker-compose --file docker-compose.test.yml build 
+          else
+            docker build . --file Dockerfile
+          fi
+      
+  push:
+    name: Build and publish the conatiner image
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: TEST Get current repository name
+        run: echo ::set-env name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")
+        shell: bash
+
+      - name: TEST Validate REPOSITORY_NAME output
+        run: echo "$REPOSITORY_NAME"
+        shell: bash
+
+      - name: Build image
+        run: docker build . --file Dockerfile --tag $REPOSITORY_NAME:${GITHUB_REF##*/}
+
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Log into own registry
+        run: echo "${{ secrets.DOCKER_API_TOKEN }}" | docker login ${{ secrets.DOCKER_REPO }} -u '${{ secrets.DOCKER_LOGIN_NAME }}' --password-stdin
+
+      - name: Tag, check and push the images to Github Container Registry and External Container Registry
+        run: |
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$REPOSITORY_NAME
+          IMAGE_ID_2=${{ secrets.DOCKER_REPO }}/${{ secrets.DOCKER_LOGIN_NAME }}/$REPOSITORY_NAME
+
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          IMAGE_ID_2=$(echo $IMAGE_ID_2 | tr '[A-Z]' '[a-z]')
+
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          [ "$VERSION" == "master" ] && VERSION=latest
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo IMAGE_ID_2=$IMAGE_ID_2
+          echo VERSION=$VERSION
+
+          docker tag $REPOSITORY_NAME:${GITHUB_REF##*/} $IMAGE_ID:$VERSION
+          docker tag $REPOSITORY_NAME:${GITHUB_REF##*/} $IMAGE_ID_2:$VERSION
+
+      
+          DIVE_VERSION=v0.10
+          docker pull wagoodman/dive:$DIVE_VERSION
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock --mount type=bind,source="$(pwd)"/.dive-ci,target=/.dive-ci,readonly wagoodman/dive:$DIVE_VERSION --ci $IMAGE_ID:$VERSION --ci-config /.dive-ci
+
+          docker push $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID_2:$VERSION
