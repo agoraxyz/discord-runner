@@ -79,8 +79,8 @@ const createRouter = () => {
   );
 
   router.get(
-    "/channels/:guildId",
-    validators.paramDiscordId("guildId"),
+    "/channels/:inviteCode",
+    validators.paramDiscordId("inviteCode"),
     controller.channels
   );
 

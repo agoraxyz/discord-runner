@@ -177,8 +177,8 @@ const controller = {
       return;
     }
 
-    const { guildId } = req.params;
-    listChannels(guildId)
+    const { inviteCode } = req.params;
+    listChannels(inviteCode)
       .then((result) => res.status(200).json(result))
       .catch((error) => {
         const errorMsg = getErrorResult(error);

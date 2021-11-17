@@ -6,7 +6,6 @@ import {
   Permissions,
   GuildChannel,
   MessageEmbed,
-  Guild,
   Channel,
 } from "discord.js";
 import Main from "../Main";
@@ -344,36 +343,35 @@ const isIn = async (guildId: string): Promise<boolean> => {
 };
 
 const listChannels = async (
-  guildId: string
+  inviteCode: string
 ): Promise<DiscordChannel[] | undefined> => {
-  logger.verbose(`listChannels params: ${guildId}`);
-  let guild: Guild;
+  logger.verbose(`listChannels params: ${inviteCode}`);
   try {
-    guild = await Main.Client.guilds.fetch(guildId);
+    const invite = await Main.Client.fetchInvite(inviteCode);
+    const guild = await Main.Client.guilds.fetch(invite.guild.id);
+    const channels = guild.channels.cache
+      .filter(
+        (c) =>
+          c.type === "GUILD_TEXT" &&
+          c
+            .permissionsFor(guild.roles.everyone)
+            .has(Permissions.FLAGS.VIEW_CHANNEL)
+      )
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        category: c.parent.name.toUpperCase(),
+      }));
+
+    logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
+    return channels;
   } catch (error) {
     if (error.code === 50001) {
-      logger.verbose(`listChannels: guild not found`);
-      throw new ActionError("Guild not found.", [guildId]);
+      logger.verbose(`listChannels: guild or inviteCode not found`);
+      throw new ActionError("guild or inviteCode not found.", [inviteCode]);
     }
     throw error;
   }
-
-  const channels = guild.channels.cache
-    .filter(
-      (c) =>
-        c.type === "GUILD_TEXT" &&
-        c
-          .permissionsFor(guild.roles.everyone)
-          .has(Permissions.FLAGS.VIEW_CHANNEL)
-    )
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      category: c.parent.name.toUpperCase(),
-    }));
-
-  logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
-  return channels;
 };
 
 const listAdministeredServers = async (userHash: string) => {
