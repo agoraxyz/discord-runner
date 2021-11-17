@@ -80,7 +80,7 @@ const createRouter = () => {
 
   router.get(
     "/channels/:inviteCode",
-    validators.paramDiscordId("inviteCode"),
+    validators.inviteCodeValidator,
     controller.channels
   );
 
