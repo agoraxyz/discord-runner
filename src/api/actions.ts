@@ -28,6 +28,8 @@ import {
 } from "../utils/utils";
 import config from "../config";
 
+const DiscordServerNames: { [guildId: string]: [name: string] } = {};
+
 const notifyAccessedChannels = async (
   member: GuildMember | PartialGuildMember,
   addedRoles: Collection<string, Role>,
@@ -404,15 +406,18 @@ const getCategories = async (inviteCode: string) => {
 };
 
 const getGuild = async (guildId: string) => {
+  if (DiscordServerNames[guildId]) {
+    return DiscordServerNames[guildId];
+  }
   const guild = await Main.Client.guilds.fetch(guildId);
-  return guild;
+  DiscordServerNames[guildId] = guild.name as any;
+  return guild.name;
 };
-
 
 const getRole = async (guildId: string, roleId: string) => {
   const guild = await Main.Client.guilds.fetch(guildId);
-  const role = guild.roles.cache.find((r) => r.id === roleId)
-  return {serverName: guild.name, roleName: role.name};
+  const role = guild.roles.cache.find((r) => r.id === roleId);
+  return { serverName: guild.name, roleName: role.name };
 };
 
 export {

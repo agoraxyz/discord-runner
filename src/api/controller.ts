@@ -281,15 +281,14 @@ const controller = {
     }
     try {
       const { guildId } = req.params;
-      const guild = await getGuild(guildId);
+      const guildName = await getGuild(guildId);
 
-      res.status(200).json(guild.name);
+      res.status(200).json(guildName);
     } catch (error) {
       const errorMsg = getErrorResult(error);
       res.status(400).json(errorMsg);
     }
   },
-
 
   getRoleNameByRoleId: async (req: Request, res: Response): Promise<void> => {
     const errors = validationResult(req);
