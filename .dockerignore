@@ -1,2 +1,7 @@
 .git
+.github
+.dockerignore
+Dockerfile
 node_modules
+README.md
+.dive-ci
