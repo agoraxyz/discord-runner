@@ -89,7 +89,6 @@ const createRouter = () => {
     validators.bodyDiscordId("guildId"),
     validators.bodyDiscordId("roleId"),
     validators.channelNameValidator,
-    validators.categoryNameValidator,
     controller.createChannel
   );
 

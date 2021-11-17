@@ -202,7 +202,7 @@ const removeUser = async (guildId: string, userHash: string): Promise<void> => {
 
 const createChannel = async (params: CreateChannelParams) => {
   logger.verbose(`createChannel params: ${JSON.stringify(params)}`);
-  const { guildId, roleId, channelName, categoryName } = params;
+  const { guildId, roleId, channelName } = params;
   const guild = await Main.Client.guilds.fetch(guildId);
 
   const everyone = guild.roles.cache.find((r) => r.name === "@everyone");
@@ -222,15 +222,6 @@ const createChannel = async (params: CreateChannelParams) => {
         (c) => c.name === createdChannel.name && !c.isThread()
       ) as GuildChannel
     ).setParent(category.id);
-  }
-  // categoryName param is ID, TODO modify
-  if (categoryName) {
-    const category = guild.channels.cache.find(
-      (c) => c.id === categoryName && c.type === "GUILD_CATEGORY"
-    );
-    if (category) {
-      await createdChannel.setParent(category.id);
-    }
   }
 
   createdChannel.permissionOverwrites.set([
