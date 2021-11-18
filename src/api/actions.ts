@@ -7,6 +7,7 @@ import {
   GuildChannel,
   MessageEmbed,
   Channel,
+  TextChannel,
 } from "discord.js";
 import Main from "../Main";
 import logger from "../utils/logger";
@@ -20,6 +21,7 @@ import {
   UserResult,
 } from "./types";
 import {
+  createJoinButton,
   getErrorResult,
   getUserDiscordId,
   getUserResult,
@@ -408,9 +410,14 @@ const getRole = async (guildId: string, roleId: string) => {
 
 const sendJoinButton = async (guildId: string, channelId: string) => {
   const guild = await Main.Client.guilds.fetch(guildId);
-  // eslint-disable-next-line no-unused-vars
   const channel = guild.channels.cache.find((c) => c.id === channelId);
-  // TODO send join-button to channel
+  const row = createJoinButton();
+
+  (<TextChannel>channel).send({
+    content: "Click the button to join guilds!",
+    components: [row],
+  });
+
   return true;
 };
 
