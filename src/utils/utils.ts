@@ -1,6 +1,11 @@
 import { AxiosResponse } from "axios";
 import { createHmac } from "crypto";
-import { GuildMember, DiscordAPIError } from "discord.js";
+import {
+  GuildMember,
+  DiscordAPIError,
+  MessageButton,
+  MessageActionRow,
+} from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
 import redisClient from "../database";
@@ -88,6 +93,16 @@ const getUserDiscordId = async (
 const isNumber = (value: any) =>
   typeof value === "number" && Number.isFinite(value);
 
+const createJoinButton = () => {
+  const button = new MessageButton({
+    customId: "join-button",
+    label: "Join guilds",
+    emoji: "🔗",
+    style: "PRIMARY",
+  });
+  return new MessageActionRow({ components: [button] });
+};
+
 export {
   getUserResult,
   getErrorResult,
@@ -96,4 +111,5 @@ export {
   getUserHash,
   getUserDiscordId,
   isNumber,
+  createJoinButton,
 };
