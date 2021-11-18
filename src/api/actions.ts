@@ -15,7 +15,6 @@ import {
   CreateChannelParams,
   CreateRoleResult,
   DeleteChannelAndRoleParams,
-  DiscordChannel,
   InviteResult,
   ManageRolesParams,
   UserResult,
@@ -330,9 +329,7 @@ const isIn = async (guildId: string): Promise<boolean> => {
   }
 };
 
-const listChannels = async (
-  inviteCode: string
-): Promise<DiscordChannel[] | undefined> => {
+const listChannels = async (inviteCode: string) => {
   logger.verbose(`listChannels params: ${inviteCode}`);
   try {
     const invite = await Main.Client.fetchInvite(inviteCode);
@@ -346,13 +343,16 @@ const listChannels = async (
             .has(Permissions.FLAGS.VIEW_CHANNEL)
       )
       .map((c) => ({
-        id: c.id,
-        name: c.name,
-        category: c.parent.name.toUpperCase(),
+        id: c?.id,
+        name: c?.name,
+        category: c?.parent?.name?.toUpperCase(),
       }));
 
     logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
-    return channels;
+    return {
+      serverId: invite.guild.id,
+      channels,
+    };
   } catch (error) {
     if (error.code === 50001) {
       logger.verbose(`listChannels: guild or inviteCode not found`);
