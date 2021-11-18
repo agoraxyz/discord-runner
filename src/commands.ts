@@ -86,7 +86,8 @@ const join = async (userId: string, guildId: string) => {
   } else if (channelIds) {
     message = "❌ You don't have access to any guilds in this server.";
   } else {
-    message = `${config.guildUrl}/connect/${userId}`;
+    const guilds = await getGuildsOfServer(guildId);
+    message = `${config.guildUrl}/guild/${guilds[0].urlName}/?discordId=${userId}`;
   }
 
   return message;
