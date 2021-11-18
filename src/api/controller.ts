@@ -319,7 +319,7 @@ const controller = {
       return;
     }
     try {
-      const { guildId, channelId } = req.params;
+      const { guildId, channelId } = req.body;
       const result = await sendJoinButton(guildId, channelId);
       res.status(200).json(result);
     } catch (error) {

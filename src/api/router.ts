@@ -87,7 +87,7 @@ const createRouter = () => {
   router.post(
     "/channels/sendJoin",
     validators.bodyDiscordId("guildId"),
-    validators.paramDiscordId("channelId"),
+    validators.bodyDiscordId("channelId"),
     controller.sendJoinButtonToChannel
   );
 
