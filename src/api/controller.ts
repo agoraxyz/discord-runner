@@ -17,6 +17,7 @@ import {
   removeUser,
   updateRoleName,
   sendJoinButton,
+  deleteRole,
 } from "./actions";
 import {
   CreateChannelParams,
@@ -151,6 +152,23 @@ const controller = {
         const errorMsg = getErrorResult(error);
         res.status(400).json(errorMsg);
       });
+  },
+
+  deleteRole: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      const { guildId, roleId } = req.body;
+      const deleted = await deleteRole(guildId, roleId);
+      res.status(200).json(deleted);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
   },
 
   isIn: (req: Request, res: Response): void => {

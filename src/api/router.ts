@@ -72,6 +72,13 @@ const createRouter = () => {
     controller.updateRole
   );
 
+  router.post(
+    "/role/delete",
+    validators.bodyDiscordId("guildId"),
+    validators.bodyDiscordId("roleId"),
+    controller.deleteRole
+  );
+
   router.get(
     "/isIn/:guildId",
     validators.paramDiscordId("guildId"),

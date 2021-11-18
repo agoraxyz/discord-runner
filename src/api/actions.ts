@@ -436,5 +436,6 @@ export {
   getGuild,
   getRole,
   deleteChannelAndRole,
+  deleteRole,
   sendJoinButton,
 };
