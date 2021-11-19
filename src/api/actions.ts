@@ -335,26 +335,32 @@ const listChannels = async (inviteCode: string) => {
   logger.verbose(`listChannels params: ${inviteCode}`);
   try {
     const invite = await Main.Client.fetchInvite(inviteCode);
-    const guild = await Main.Client.guilds.fetch(invite.guild.id);
-    const channels = guild.channels.cache
-      .filter(
-        (c) =>
-          c.type === "GUILD_TEXT" &&
-          c
-            .permissionsFor(guild.roles.everyone)
-            .has(Permissions.FLAGS.VIEW_CHANNEL)
-      )
-      .map((c) => ({
-        id: c?.id,
-        name: c?.name,
-        category: c?.parent?.name?.toUpperCase(),
-      }));
+    try {
+      const guild = await Main.Client.guilds.fetch(invite.guild.id);
+      const channels = guild?.channels.cache
+        .filter(
+          (c) =>
+            c.type === "GUILD_TEXT" &&
+            c
+              .permissionsFor(guild.roles.everyone)
+              .has(Permissions.FLAGS.VIEW_CHANNEL)
+        )
+        .map((c) => ({
+          id: c?.id,
+          name: c?.name,
+        }));
 
-    logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
-    return {
-      serverId: invite.guild.id,
-      channels,
-    };
+      logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
+      return {
+        serverId: invite.guild.id,
+        channels,
+      };
+    } catch (error) {
+      return {
+        serverId: invite.guild.id,
+        channels: [],
+      };
+    }
   } catch (error) {
     if (error.code === 50001) {
       logger.verbose(`listChannels: guild or inviteCode not found`);
