@@ -5,6 +5,8 @@ import {
   DiscordAPIError,
   MessageButton,
   MessageActionRow,
+  MessageEmbed,
+  ColorResolvable,
 } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
@@ -93,14 +95,33 @@ const getUserDiscordId = async (
 const isNumber = (value: any) =>
   typeof value === "number" && Number.isFinite(value);
 
-const createJoinButton = () => {
+const createJoinInteractionPayload = (guild: {
+  name: string;
+  urlName: string;
+  description: string;
+  themeColor: string;
+}) => {
   const button = new MessageButton({
     customId: "join-button",
-    label: "Join guilds",
+    label: `Join ${guild.name}`,
     emoji: "🔗",
     style: "PRIMARY",
   });
-  return new MessageActionRow({ components: [button] });
+  const row = new MessageActionRow({ components: [button] });
+  return {
+    embeds: [
+      new MessageEmbed({
+        title: guild.name,
+        url: `${config.guildUrl}/guild/${guild.urlName}`,
+        description: guild.description,
+        color: guild.themeColor as ColorResolvable,
+        footer: {
+          text: "Click the button to get access for the desired Guild(s)!",
+        },
+      }),
+    ],
+    components: [row],
+  };
 };
 
 export {
@@ -111,5 +132,5 @@ export {
   getUserHash,
   getUserDiscordId,
   isNumber,
-  createJoinButton,
+  createJoinInteractionPayload,
 };
