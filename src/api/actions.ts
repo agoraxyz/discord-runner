@@ -21,12 +21,13 @@ import {
   UserResult,
 } from "./types";
 import {
-  createJoinButton,
+  createJoinInteractionPayload,
   getErrorResult,
   getUserDiscordId,
   getUserResult,
 } from "../utils/utils";
 import config from "../config";
+import { getGuildsOfServer } from "../service";
 
 const DiscordServerNames: { [guildId: string]: [name: string] } = {};
 
@@ -417,12 +418,10 @@ const getRole = async (guildId: string, roleId: string) => {
 const sendJoinButton = async (guildId: string, channelId: string) => {
   const guild = await Main.Client.guilds.fetch(guildId);
   const channel = guild.channels.cache.find((c) => c.id === channelId);
-  const row = createJoinButton();
+  const guilds = await getGuildsOfServer(guildId);
+  const payload = createJoinInteractionPayload(guilds[0]);
 
-  (<TextChannel>channel).send({
-    content: "Click the button to join guilds!",
-    components: [row],
-  });
+  (<TextChannel>channel).send(payload);
 
   return true;
 };

@@ -6,11 +6,11 @@ import { guilds, join, ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
 import {
-  createJoinButton,
+  createJoinInteractionPayload,
   getUserDiscordId,
   getUserHash,
 } from "../utils/utils";
-import { guildStatusUpdate } from "../service";
+import { getGuildsOfServer, guildStatusUpdate } from "../service";
 
 @Discord()
 abstract class Slashes {
@@ -146,12 +146,10 @@ abstract class Slashes {
       interaction.reply("Use this command in a server to spawn a join button!");
       return;
     }
-    const row = createJoinButton();
+    const guild = await getGuildsOfServer(interaction.guild.id)[0];
+    const payload = createJoinInteractionPayload(guild);
 
-    await interaction.channel.send({
-      content: "Click the button to join guilds!",
-      components: [row],
-    });
+    await interaction.channel.send(payload);
 
     await interaction.reply({
       content: "Join button created successfully.",
