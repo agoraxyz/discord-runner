@@ -110,7 +110,7 @@ const createRouter = () => {
     "/channels/delete",
     validators.bodyDiscordId("guildId"),
     validators.bodyDiscordId("roleId"),
-    validators.channelNameValidator,
+    validators.bodyDiscordId("channelId"),
     controller.deleteChannelAndRole
   );
 

@@ -14,7 +14,7 @@ type CreateChannelParams = {
 type DeleteChannelAndRoleParams = {
   guildId: string;
   roleId: string;
-  channelName: string;
+  channelId: string;
 };
 
 type UserResult = {
