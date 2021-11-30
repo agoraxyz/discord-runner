@@ -95,15 +95,19 @@ const getUserDiscordId = async (
 const isNumber = (value: any) =>
   typeof value === "number" && Number.isFinite(value);
 
-const createJoinInteractionPayload = (guild: {
-  name: string;
-  urlName: string;
-  description: string;
-  themeColor: string;
-}) => {
+const createJoinInteractionPayload = (
+  guild: {
+    name: string;
+    urlName: string;
+    description: string;
+    themeColor: string;
+  },
+  messageText: string,
+  buttonText: string
+) => {
   const button = new MessageButton({
     customId: "join-button",
-    label: `Join ${guild?.name || "Guild"}`,
+    label: buttonText || `Join ${guild?.name || "Guild"}`,
     emoji: "🔗",
     style: "PRIMARY",
   });
@@ -116,7 +120,9 @@ const createJoinInteractionPayload = (guild: {
         description: guild.description,
         color: guild.themeColor as ColorResolvable,
         footer: {
-          text: "Click the button to get access for the desired Guild(s)!",
+          text:
+            messageText ||
+            "Click the button to get access for the desired Guild(s)!",
         },
       }),
     ],

@@ -419,7 +419,7 @@ const sendJoinButton = async (guildId: string, channelId: string) => {
   const guild = await Main.Client.guilds.fetch(guildId);
   const channel = guild.channels.cache.find((c) => c.id === channelId);
   const guilds = await getGuildsOfServer(guildId);
-  const payload = createJoinInteractionPayload(guilds[0]);
+  const payload = createJoinInteractionPayload(guilds[0], null, null);
 
   (<TextChannel>channel).send(payload);
 
