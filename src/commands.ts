@@ -87,7 +87,7 @@ const join = async (userId: string, guildId: string) => {
     message = "❌ You don't have access to any guilds in this server.";
   } else {
     const guilds = await getGuildsOfServer(guildId);
-    message = `${config.guildUrl}/guild/${guilds[0].urlName}/?discordId=${userId}`;
+    message = `${config.guildUrl}/${guilds[0].urlName}/?discordId=${userId}`;
   }
 
   return message;
@@ -103,7 +103,7 @@ const guilds = async (serverId: string): Promise<MessageEmbed[]> => {
     (g, i) =>
       new MessageEmbed({
         title: g.name,
-        url: `${config.guildUrl}/guild/${g.urlName}`,
+        url: `${config.guildUrl}/${g.urlName}`,
         description: g.description,
         color: g.themeColor as ColorResolvable,
         footer: { text: `Page ${i + 1} of ${guildsResult.length}` },

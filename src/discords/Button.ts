@@ -10,7 +10,7 @@ abstract class Buttons {
   async button1(interaction: ButtonInteraction) {
     const guilds = await getGuildsOfServer(interaction.guild.id);
     await interaction.reply({
-      content: `${config.guildUrl}/guild/${guilds[0].urlName}/?discordId=${interaction.user.id}`,
+      content: `${config.guildUrl}/${guilds[0].urlName}/?discordId=${interaction.user.id}`,
       ephemeral: true,
     });
   }

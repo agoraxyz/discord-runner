@@ -116,7 +116,7 @@ const createJoinInteractionPayload = (
     embeds: [
       new MessageEmbed({
         title: guild?.name || "Guild",
-        url: `${config.guildUrl}/guild/${guild.urlName}`,
+        url: `${config.guildUrl}/${guild.urlName}`,
         description: guild.description,
         color: guild.themeColor as ColorResolvable,
         footer: {
