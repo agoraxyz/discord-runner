@@ -64,7 +64,7 @@ const getGuildsOfServer = async (serverId: string) => {
       `${API_BASE_URL}/guild/platformId/${serverId}`
     );
     logAxiosResponse(response);
-    return response.data;
+    return [response.data];
   } catch (error) {
     logger.verbose("getGuildsOfServer error");
     return [];
