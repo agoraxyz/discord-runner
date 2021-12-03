@@ -97,14 +97,14 @@ abstract class Slashes {
       `/join command was used by ${interaction.user.username}#${interaction.user.discriminator}`
     );
 
-    interaction.reply({
+    await interaction.reply({
       content: "I'll update your accesses as soon as possible.",
       ephemeral: true,
     });
 
-    const message = await join(interaction.user.id, interaction.guild.id);
+    const result = await join(interaction.user.id, interaction.guild.id);
 
-    interaction.editReply(message);
+    await interaction.editReply(result.message);
   }
 
   @Slash("guilds")

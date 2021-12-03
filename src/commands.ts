@@ -1,8 +1,10 @@
 import { ColorResolvable, MessageEmbed, User } from "discord.js";
+import { JoinCommandResult } from "./api/types";
 import config from "./config";
 import Main from "./Main";
 import { getGuildsOfServer, statusUpdate, userJoined } from "./service";
 import logger from "./utils/logger";
+import { getJoinReplyMessage } from "./utils/utils";
 
 const ping = (createdTimestamp: number) =>
   `Latency is ${Date.now() - createdTimestamp}ms. API Latency is ${Math.round(
@@ -71,26 +73,15 @@ const status = async (user: User, userHash: string) => {
   });
 };
 
-const join = async (userId: string, guildId: string) => {
+const join = async (
+  userId: string,
+  guildId: string
+): Promise<JoinCommandResult> => {
   const channelIds = await userJoined(userId, guildId);
 
-  let message: string;
-  if (channelIds && channelIds.length !== 0) {
-    if (channelIds.length === 1) {
-      message = `✅ You got access to this channel: <#${channelIds[0]}>`;
-    } else {
-      message = `✅ You got access to these channels:\n${channelIds
-        .map((c: string) => `<#${c}>`)
-        .join("\n")}`;
-    }
-  } else if (channelIds) {
-    message = "❌ You don't have access to any guilds in this server.";
-  } else {
-    const guilds = await getGuildsOfServer(guildId);
-    message = `${config.guildUrl}/${guilds[0].urlName}/?discordId=${userId}`;
-  }
+  const message = await getJoinReplyMessage(channelIds, guildId, userId);
 
-  return message;
+  return { message, alreadyConnected: !!channelIds };
 };
 
 const guilds = async (serverId: string): Promise<MessageEmbed[]> => {

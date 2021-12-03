@@ -1,18 +1,20 @@
 /* eslint-disable class-methods-use-this */
 import { ButtonInteraction } from "discord.js";
 import { ButtonComponent, Discord } from "discordx";
-import config from "../config";
-import { getGuildsOfServer } from "../service";
+import { join } from "../commands";
 
 @Discord()
 abstract class Buttons {
   @ButtonComponent("join-button")
   async button1(interaction: ButtonInteraction) {
-    const guilds = await getGuildsOfServer(interaction.guild.id);
     await interaction.reply({
-      content: `${config.guildUrl}/${guilds[0].urlName}/?discordId=${interaction.user.id}`,
+      content: "I'll update your accesses as soon as possible.",
       ephemeral: true,
     });
+
+    const result = await join(interaction.user.id, interaction.guild.id);
+
+    interaction.editReply(result.message);
   }
 }
 

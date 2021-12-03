@@ -11,6 +11,7 @@ import {
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
 import redisClient from "../database";
+import { getGuildsOfServer } from "../service";
 import logger from "./logger";
 
 const getUserResult = (member: GuildMember): UserResult => ({
@@ -130,6 +131,30 @@ const createJoinInteractionPayload = (
   };
 };
 
+const getJoinReplyMessage = async (
+  channelIds: string[],
+  guildId: string,
+  userId: string
+) => {
+  let message: string;
+  if (channelIds && channelIds.length !== 0) {
+    if (channelIds.length === 1) {
+      message = `✅ You got access to this channel: <#${channelIds[0]}>`;
+    } else {
+      message = `✅ You got access to these channels:\n${channelIds
+        .map((c: string) => `<#${c}>`)
+        .join("\n")}`;
+    }
+  } else if (channelIds) {
+    message = "❌ You don't have access to any guilds in this server.";
+  } else {
+    const guildsOfServer = await getGuildsOfServer(guildId);
+    message = `${config.guildUrl}/${guildsOfServer[0].urlName}/?discordId=${userId}`;
+  }
+
+  return message;
+};
+
 export {
   getUserResult,
   getErrorResult,
@@ -139,4 +164,5 @@ export {
   getUserDiscordId,
   isNumber,
   createJoinInteractionPayload,
+  getJoinReplyMessage,
 };
