@@ -8,7 +8,7 @@ import {
 } from "discord.js";
 import { Discord, Guard, On } from "discordx";
 import config from "../config";
-import IsAPrivateMessage from "../guards/IsAPrivateMessage";
+import IsDM from "../guards/IsDM";
 import NotABot from "../guards/NotABot";
 import NotACommand from "../guards/NotACommand";
 import Main from "../Main";
@@ -23,7 +23,7 @@ abstract class Events {
   }
 
   @On("messageCreate")
-  @Guard(NotABot, IsAPrivateMessage, NotACommand)
+  @Guard(NotABot, IsDM, NotACommand)
   onPrivateMessage([message]: [Message]): void {
     logger.verbose(
       `unkown request: ${message.author.username}#${message.author.discriminator}: ${message.content}`
