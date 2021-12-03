@@ -162,7 +162,7 @@ const getJoinReplyMessage = async (
       const roleNames = guild.roles.cache
         .filter((role) => roleIds.some((roleId) => roleId === role.id))
         .map((role) => role.name);
-      message = `✅ You got the \`${roleNames.join(", ")}\` roles.`;
+      message = `✅ You got the \`${roleNames.join(", ")}\` role(s).`;
     } else if (channelIds.length === 1) {
       message = `✅ You got access to this channel: <#${channelIds[0]}>`;
     } else {
