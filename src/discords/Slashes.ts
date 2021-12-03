@@ -144,7 +144,7 @@ abstract class Slashes {
   async joinButton(
     @SlashOption("messagetext", {
       required: false,
-      description: "The text that will be shown in the emberd message.",
+      description: "The text that will be shown in the embed message.",
     })
     messageText: string,
     @SlashOption("buttontext", {
