@@ -9,6 +9,7 @@ import {
   Channel,
   TextChannel,
 } from "discord.js";
+import axios from "axios";
 import Main from "../Main";
 import logger from "../utils/logger";
 import {
@@ -22,12 +23,15 @@ import {
 } from "./types";
 import {
   createJoinInteractionPayload,
+  getAccessedChannelsByRoles,
   getErrorResult,
+  getJoinReplyMessage,
   getUserDiscordId,
   getUserResult,
 } from "../utils/utils";
 import config from "../config";
 import { getGuildsOfServer } from "../service";
+import redisClient from "../database";
 
 const DiscordServerNames: { [guildId: string]: [name: string] } = {};
 
@@ -36,18 +40,12 @@ const notifyAccessedChannels = async (
   addedRoles: Collection<string, Role>,
   guildName: string
 ) => {
-  const accessedRoles = addedRoles.map((r) => r.id);
-  const accessedChannels = member.guild.channels.cache.filter(
-    (channel) =>
-      channel.type !== "GUILD_CATEGORY" &&
-      !channel.isThread() &&
-      channel.permissionOverwrites.cache.some(
-        (po) =>
-          accessedRoles.some((ar) => ar === po.id) &&
-          po.allow.has(Permissions.FLAGS.VIEW_CHANNEL)
-      )
-  ) as Collection<string, GuildChannel>;
+  const accessedRoleIds = addedRoles.map((r) => r.id);
 
+  const accessedChannels = getAccessedChannelsByRoles(
+    member.guild,
+    accessedRoleIds
+  );
   const sortedChannels = accessedChannels.reduce<
     Map<string | null, GuildChannel[]>
   >((acc, value) => {
@@ -116,6 +114,26 @@ const manageRoles = async (
     throw new ActionError("missing role(s)", missingRoleIds);
   }
 
+  const redisKey = `joining:${member.guild.id}:${member.id}`;
+  const redisValue: string = await redisClient.getAsync(redisKey);
+  if (redisValue) {
+    const messageText = await getJoinReplyMessage(
+      roleIds,
+      member.guild,
+      member.id
+    );
+
+    try {
+      await axios.patch(
+        `https://discord.com/api/v8/webhooks/${Main.Client.application.id}/${redisValue}/messages/@original`,
+        { content: messageText }
+      );
+      redisClient.client.del(redisKey);
+    } catch (err) {
+      logger.error(err);
+    }
+  }
+
   if (
     (isUpgrade && roleIds.some((id) => !member.roles.cache.has(id))) ||
     (!isUpgrade && roleIds.some((id) => member.roles.cache.has(id)))
@@ -127,7 +145,7 @@ const manageRoles = async (
       updatedMember = await member.roles.remove(rolesToManage);
     }
 
-    if (isUpgrade) {
+    if (isUpgrade && !redisValue) {
       await notifyAccessedChannels(updatedMember, rolesToManage, message);
     }
 

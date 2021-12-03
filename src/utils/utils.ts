@@ -7,6 +7,10 @@ import {
   MessageActionRow,
   MessageEmbed,
   ColorResolvable,
+  Guild,
+  Collection,
+  GuildChannel,
+  Permissions,
 } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
@@ -131,24 +135,45 @@ const createJoinInteractionPayload = (
   };
 };
 
+const getAccessedChannelsByRoles = (guild: Guild, accessedRoles: string[]) =>
+  guild.channels.cache.filter(
+    (channel) =>
+      channel.type !== "GUILD_CATEGORY" &&
+      !channel.isThread() &&
+      channel.permissionOverwrites.cache.some(
+        (po) =>
+          accessedRoles.some((ar) => ar === po.id) &&
+          po.allow.has(Permissions.FLAGS.VIEW_CHANNEL)
+      )
+  ) as Collection<string, GuildChannel>;
+
 const getJoinReplyMessage = async (
-  channelIds: string[],
-  guildId: string,
+  roleIds: string[],
+  guild: Guild,
   userId: string
 ) => {
   let message: string;
-  if (channelIds && channelIds.length !== 0) {
-    if (channelIds.length === 1) {
+  if (roleIds && roleIds.length !== 0) {
+    const channelIds = getAccessedChannelsByRoles(guild, roleIds).map(
+      (c) => c.id
+    );
+
+    if (channelIds.length === 0) {
+      const roleNames = guild.roles.cache
+        .filter((role) => roleIds.some((roleId) => roleId === role.id))
+        .map((role) => role.name);
+      message = `✅ You got the \`${roleNames.join(", ")}\` roles.`;
+    } else if (channelIds.length === 1) {
       message = `✅ You got access to this channel: <#${channelIds[0]}>`;
     } else {
       message = `✅ You got access to these channels:\n${channelIds
         .map((c: string) => `<#${c}>`)
         .join("\n")}`;
     }
-  } else if (channelIds) {
+  } else if (roleIds) {
     message = "❌ You don't have access to any guilds in this server.";
   } else {
-    const guildsOfServer = await getGuildsOfServer(guildId);
+    const guildsOfServer = await getGuildsOfServer(guild.id);
     message = `${config.guildUrl}/${guildsOfServer[0].urlName}/?discordId=${userId}`;
   }
 
@@ -165,4 +190,5 @@ export {
   isNumber,
   createJoinInteractionPayload,
   getJoinReplyMessage,
+  getAccessedChannelsByRoles,
 };

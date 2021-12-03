@@ -1,6 +1,6 @@
-import { ColorResolvable, MessageEmbed, User } from "discord.js";
-import { JoinCommandResult } from "./api/types";
+import { ColorResolvable, Guild, MessageEmbed, User } from "discord.js";
 import config from "./config";
+import redisClient from "./database";
 import Main from "./Main";
 import { getGuildsOfServer, statusUpdate, userJoined } from "./service";
 import logger from "./utils/logger";
@@ -75,13 +75,23 @@ const status = async (user: User, userHash: string) => {
 
 const join = async (
   userId: string,
-  guildId: string
-): Promise<JoinCommandResult> => {
-  const channelIds = await userJoined(userId, guildId);
+  guild: Guild,
+  interactionToken: string
+): Promise<string> => {
+  const roleIds = await userJoined(userId, guild.id);
 
-  const message = await getJoinReplyMessage(channelIds, guildId, userId);
+  const message = await getJoinReplyMessage(roleIds, guild, userId);
 
-  return { message, alreadyConnected: !!channelIds };
+  if (!roleIds) {
+    redisClient.client.set(
+      `joining:${guild.id}:${userId}`,
+      interactionToken,
+      "EX",
+      15 * 60
+    );
+  }
+
+  return message;
 };
 
 const guilds = async (serverId: string): Promise<MessageEmbed[]> => {

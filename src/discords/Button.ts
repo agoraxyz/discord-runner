@@ -12,9 +12,13 @@ abstract class Buttons {
       ephemeral: true,
     });
 
-    const result = await join(interaction.user.id, interaction.guild.id);
+    const message = await join(
+      interaction.user.id,
+      interaction.guild,
+      interaction.token
+    );
 
-    interaction.editReply(result.message);
+    await interaction.editReply(message);
   }
 }
 

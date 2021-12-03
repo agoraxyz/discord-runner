@@ -63,11 +63,6 @@ type InviteData = {
   inviteChannelId: string;
 };
 
-type JoinCommandResult = {
-  message: string;
-  alreadyConnected: boolean;
-};
-
 export {
   ManageRolesParams,
   CreateChannelParams,
@@ -80,5 +75,4 @@ export {
   DiscordChannel,
   LevelInfo,
   InviteData,
-  JoinCommandResult,
 };
