@@ -2,18 +2,26 @@
 import { User } from "discord.js";
 import {
   Discord,
+  Guard,
   SimpleCommand,
   SimpleCommandMessage,
   SimpleCommandOption,
 } from "discordx";
 import { ping, status } from "../commands";
+import NotABot from "../guards/NotABot";
+import NotDM from "../guards/NotDM";
 import Main from "../Main";
+import { getGuildsOfServer } from "../service";
 import logger from "../utils/logger";
-import { getUserDiscordId, getUserHash } from "../utils/utils";
+import {
+  createJoinInteractionPayload,
+  getUserDiscordId,
+  getUserHash,
+} from "../utils/utils";
 
 @Discord()
 abstract class SimpleCommands {
-  static commands = ["ping", "status"];
+  static commands = ["ping", "status", "join"];
 
   @SimpleCommand("ping")
   ping(command: SimpleCommandMessage): void {
@@ -59,6 +67,18 @@ abstract class SimpleCommands {
 
     const embed = await status(user, userHash);
     command.message.reply({ embeds: [embed] }).catch(logger.error);
+  }
+
+  @SimpleCommand("join")
+  @Guard(NotDM, NotABot)
+  async join(command: SimpleCommandMessage): Promise<void> {
+    logger.verbose(
+      `${command.prefix}join command was used by ${command.message.author.username}#${command.message.author.discriminator}`
+    );
+
+    const guild = (await getGuildsOfServer(command.message.guildId))[0];
+    const payload = createJoinInteractionPayload(guild, null, null);
+    await command.message.reply(payload);
   }
 }
 
