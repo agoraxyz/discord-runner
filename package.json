@@ -20,7 +20,7 @@
     "axios": "^0.21.1",
     "discord.js": "^13.2.0",
     "discordx": "^7.0.0",
-    "dotenv": "^9.0.2",
+    "dotenv": "^15.0.0",
     "express": "^4.17.1",
     "express-validator": "^6.11.1",
     "redis": "^3.1.2",
