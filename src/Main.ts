@@ -18,35 +18,6 @@ class Main {
   public static inviteDataCache: Map<string, InviteData>;
 
   static start(): void {
-    if (config.nodeEnv === "production") {
-      const totalCPUs = os.cpus().length - 1;
-      if (cluster.isMaster) {
-        logger.info(`${totalCPUs} CPUs will be used.`);
-        logger.info(`Master ${process.pid} is running`);
-
-        for (let i = 0; i < totalCPUs; i += 1) {
-          cluster.fork();
-        }
-
-        cluster.on("exit", (worker) => {
-          logger.info(`worker ${worker.process.pid} died`);
-          cluster.fork();
-        });
-      } else {
-        logger.info(`Worker ${process.pid} started`);
-
-        app.listen(config.api.port, () => {
-          logger.info(
-            `Worker ${process.pid} is listening on http://localhost:${config.api.port}`
-          );
-        });
-      }
-    } else {
-      app.listen(config.api.port, () => {
-        logger.info(`App is listening on http://localhost:${config.api.port}`);
-      });
-    }
-
     this._client = new Client({
       intents: [
         Intents.FLAGS.GUILDS,
@@ -89,6 +60,35 @@ class Main {
   }
 }
 
-Main.start();
+if (config.nodeEnv === "production") {
+  const totalCPUs = os.cpus().length - 1;
+  if (cluster.isMaster) {
+    logger.info(`${totalCPUs} CPUs will be used.`);
+    logger.info(`Master ${process.pid} is running`);
+
+    for (let i = 0; i < totalCPUs; i += 1) {
+      cluster.fork();
+    }
+
+    cluster.on("exit", (worker) => {
+      logger.info(`worker ${worker.process.pid} died`);
+      cluster.fork();
+    });
+    Main.start();
+  } else {
+    logger.info(`Worker ${process.pid} started`);
+
+    app.listen(config.api.port, () => {
+      logger.info(
+        `Worker ${process.pid} is listening on http://localhost:${config.api.port}`
+      );
+    });
+  }
+} else {
+  app.listen(config.api.port, () => {
+    logger.info(`App is listening on http://localhost:${config.api.port}`);
+  });
+  Main.start();
+}
 
 export default Main;
