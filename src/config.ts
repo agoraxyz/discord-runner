@@ -17,6 +17,7 @@ const api = {
 };
 const embedColor = process.env.EMBED_COLOR || "6366f1";
 const guildUrl = process.env.GUILD_URL;
+const nodeEnv = process.env.NODE_ENV;
 
 if (!discordToken)
   throw new Error(
@@ -41,4 +42,5 @@ export default {
   api,
   embedColor,
   guildUrl,
+  nodeEnv,
 };
