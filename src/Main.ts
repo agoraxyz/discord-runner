@@ -1,10 +1,12 @@
 /* eslint no-underscore-dangle: ["error", { "allowAfterThis": true }] */
+import cluster from "cluster";
+import os from "os";
 import { Intents, MessageComponentInteraction } from "discord.js";
 import { Client } from "discordx";
-import api from "./api/api";
 import { InviteData } from "./api/types";
 import config from "./config";
 import logger from "./utils/logger";
+import app from "./api/app";
 
 class Main {
   private static _client: Client;
@@ -16,7 +18,28 @@ class Main {
   public static inviteDataCache: Map<string, InviteData>;
 
   static start(): void {
-    api();
+    const totalCPUs = os.cpus().length - 1;
+    if (cluster.isPrimary) {
+      logger.info(`${totalCPUs} CPUs will be used.`);
+      logger.info(`Master ${process.pid} is running`);
+
+      for (let i = 0; i < totalCPUs; i += 1) {
+        cluster.fork();
+      }
+
+      cluster.on("exit", (worker) => {
+        logger.info(`worker ${worker.process.pid} died`);
+        cluster.fork();
+      });
+    } else {
+      logger.info(`Worker ${process.pid} started`);
+
+      app.listen(config.api.port, () => {
+        logger.info(
+          `Worker ${process.pid} is listening on http://localhost:${config.api.port}`
+        );
+      });
+    }
 
     this._client = new Client({
       intents: [
