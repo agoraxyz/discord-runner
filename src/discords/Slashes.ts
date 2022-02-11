@@ -75,13 +75,13 @@ abstract class Slashes {
       ephemeral: true,
     });
 
-    const message = await join(
+    const messagePayload = await join(
       interaction.user.id,
       interaction.guild,
       interaction.token
     );
 
-    await interaction.editReply(message);
+    await interaction.editReply(messagePayload);
   }
 
   @Slash("guilds")

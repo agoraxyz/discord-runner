@@ -1,4 +1,10 @@
-import { ColorResolvable, Guild, MessageEmbed, User } from "discord.js";
+import {
+  ColorResolvable,
+  Guild,
+  MessageEmbed,
+  MessageOptions,
+  User,
+} from "discord.js";
 import config from "./config";
 import redisClient from "./database";
 import Main from "./Main";
@@ -57,7 +63,7 @@ const join = async (
   userId: string,
   guild: Guild,
   interactionToken: string
-): Promise<string> => {
+): Promise<MessageOptions> => {
   const roleIds = await userJoined(userId, guild.id);
 
   const message = await getJoinReplyMessage(roleIds, guild, userId);

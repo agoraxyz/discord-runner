@@ -9,6 +9,7 @@ import {
   Collection,
   GuildChannel,
   Permissions,
+  MessageOptions,
 } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
@@ -130,8 +131,8 @@ const getJoinReplyMessage = async (
   roleIds: string[],
   guild: Guild,
   userId: string
-) => {
-  let message: string;
+): Promise<MessageOptions> => {
+  let message: MessageOptions;
   if (roleIds && roleIds.length !== 0) {
     const channelIds = getAccessedChannelsByRoles(guild, roleIds).map(
       (c) => c.id
@@ -141,21 +142,39 @@ const getJoinReplyMessage = async (
       const roleNames = guild.roles.cache
         .filter((role) => roleIds.some((roleId) => roleId === role.id))
         .map((role) => role.name);
-      message = `✅ You got the \`${roleNames.join(", ")}\` role${
-        roleNames.length > 1 ? "s" : ""
-      }.`;
+      message = {
+        content: `✅ You got the \`${roleNames.join(", ")}\` role${
+          roleNames.length > 1 ? "s" : ""
+        }.`,
+      };
     } else if (channelIds.length === 1) {
-      message = `✅ You got access to this channel: <#${channelIds[0]}>`;
+      message = {
+        content: `✅ You got access to this channel: <#${channelIds[0]}>`,
+      };
     } else {
-      message = `✅ You got access to these channels:\n${channelIds
-        .map((c: string) => `<#${c}>`)
-        .join("\n")}`;
+      message = {
+        content: `✅ You got access to these channels:\n${channelIds
+          .map((c: string) => `<#${c}>`)
+          .join("\n")}`,
+      };
     }
   } else if (roleIds) {
-    message = "❌ You don't have access to any guilds in this server.";
+    message = {
+      content: "❌ You don't have access to any guilds in this server.",
+    };
   } else {
     const guildsOfServer = await getGuildsOfServer(guild.id);
-    message = `${config.guildUrl}/${guildsOfServer[0].urlName}/?discordId=${userId}`;
+
+    const button = new MessageButton({
+      label: "Join",
+      style: "LINK",
+      url: `${config.guildUrl}/${guildsOfServer[0].urlName}/?discordId=${userId}`,
+    });
+
+    return {
+      components: [new MessageActionRow({ components: [button] })],
+      content: `This is **your** join link. Do **NOT** share it with anyone!`,
+    };
   }
 
   return message;
