@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
-import { getErrorResult, getUserHash } from "../utils/utils";
+import { getErrorResult } from "../utils/utils";
 import {
   createChannel,
   createRole,
@@ -93,8 +93,8 @@ const controller = {
       return;
     }
 
-    const { serverId, userHash } = req.body;
-    isMember(serverId, userHash)
+    const { serverId, platformUserId } = req.body;
+    isMember(serverId, platformUserId)
       .then((result) => {
         res.status(200).json(result);
       })
@@ -112,8 +112,8 @@ const controller = {
       return;
     }
 
-    const { guildId, userHash } = req.params;
-    removeUser(guildId, userHash)
+    const { guildId, platformUserId } = req.params;
+    removeUser(guildId, platformUserId)
       .then(() => res.status(200).send())
       .catch((error) => {
         const errorMsg = getErrorResult(error);
@@ -214,30 +214,13 @@ const controller = {
       return;
     }
 
-    const { userHash } = req.params;
-    listAdministeredServers(userHash)
+    const { platformUserId } = req.params;
+    listAdministeredServers(platformUserId)
       .then((result) => res.status(200).json(result))
       .catch((error) => {
         const errorMsg = getErrorResult(error);
         res.status(400).json(errorMsg);
       });
-  },
-
-  hashUserId: async (req: Request, res: Response): Promise<void> => {
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-    try {
-      const { userId } = req.params;
-      const userHash = await getUserHash(userId);
-      res.status(200).json(userHash);
-    } catch (error) {
-      const errorMsg = getErrorResult(error);
-      res.status(400).json(errorMsg);
-    }
   },
 
   createChannel: async (req: Request, res: Response): Promise<void> => {
@@ -355,8 +338,8 @@ const controller = {
       return;
     }
     try {
-      const { guildId, userHash } = req.body;
-      const result = await getServerOwner(guildId, userHash);
+      const { guildId, platformUserId } = req.body;
+      const result = await getServerOwner(guildId, platformUserId);
       res.status(200).json(result);
     } catch (error) {
       const errorMsg = getErrorResult(error);

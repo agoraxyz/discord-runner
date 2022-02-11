@@ -1,6 +1,6 @@
 type ManageRolesParams = {
   guildId: string;
-  userHash: string;
+  platformUserId: string;
   roleId: string;
   message: string;
 };

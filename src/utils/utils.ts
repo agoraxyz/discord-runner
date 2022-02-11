@@ -1,5 +1,4 @@
 import { AxiosResponse } from "axios";
-import { createHmac } from "crypto";
 import {
   GuildMember,
   DiscordAPIError,
@@ -13,7 +12,6 @@ import {
 } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
-import redisClient from "../database";
 import { getGuildsOfServer } from "../service";
 import logger from "./logger";
 
@@ -64,11 +62,11 @@ const logBackendError = (error) => {
     error.response?.data?.errors?.length > 0 &&
     error.response?.data?.errors[0]?.msg
   ) {
-    logger.error(error.response.data.errors[0].msg);
+    logger.verbose(error.response.data.errors[0].msg);
   } else if (error.response?.data) {
-    logger.error(JSON.stringify(error.response.data));
+    logger.verbose(JSON.stringify(error.response.data));
   } else {
-    logger.error(JSON.stringify(error));
+    logger.verbose(JSON.stringify(error));
   }
 };
 
@@ -76,24 +74,6 @@ const logAxiosResponse = (res: AxiosResponse<any>) => {
   logger.verbose(
     `${res.status} ${res.statusText} data:${JSON.stringify(res.data)}`
   );
-};
-
-const getUserHash = async (platformUserId: string): Promise<string> => {
-  const hmac = createHmac(config.hmacAlgorithm, config.hmacSecret);
-  hmac.update(platformUserId);
-  const hashedId = hmac.digest("base64");
-  const user = await redisClient.getAsync(hashedId);
-  if (!user) {
-    redisClient.client.SET(hashedId, platformUserId);
-  }
-  return hashedId;
-};
-
-const getUserDiscordId = async (
-  userHash: string
-): Promise<string | undefined> => {
-  const platformUserId = await redisClient.getAsync(userHash);
-  return platformUserId || undefined;
 };
 
 const isNumber = (value: any) =>
@@ -186,8 +166,6 @@ export {
   getErrorResult,
   logBackendError,
   logAxiosResponse,
-  getUserHash,
-  getUserDiscordId,
   isNumber,
   createJoinInteractionPayload,
   getJoinReplyMessage,

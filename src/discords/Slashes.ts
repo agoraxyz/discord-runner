@@ -5,12 +5,8 @@ import { Pagination } from "@discordx/utilities";
 import { guilds, join, ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
-import {
-  createJoinInteractionPayload,
-  getUserDiscordId,
-  getUserHash,
-} from "../utils/utils";
-import { getGuildsOfServer, guildStatusUpdate } from "../service";
+import { createJoinInteractionPayload } from "../utils/utils";
+import { getGuildsOfServer } from "../service";
 
 @Discord()
 abstract class Slashes {
@@ -21,74 +17,53 @@ abstract class Slashes {
     logger.verbose(
       `/ping command was used by ${interaction.user.username}#${interaction.user.discriminator}`
     );
-    interaction.reply(ping(interaction.createdTimestamp)).catch(logger.error);
+    interaction
+      .reply({ content: ping(interaction.createdTimestamp), ephemeral: true })
+      .catch(logger.error);
   }
 
   @Slash("status")
   async status(
-    @SlashOption("userhash", {
+    @SlashOption("userid", {
       required: false,
-      description: "Hash of a user.",
+      description: "Id of a user.",
     })
-    userHashParam: string,
+    userIdParam: string,
     interaction: CommandInteraction
   ): Promise<void> {
-    let userHash: string;
+    let userId: string;
     let user: User;
-    if (userHashParam) {
-      userHash = userHashParam;
-      const userId = await getUserDiscordId(userHash);
+    if (userIdParam) {
+      userId = userIdParam;
       user = await Main.Client.users.fetch(userId);
     } else {
-      userHash = await getUserHash(interaction.user.id);
+      userId = interaction.user.id;
       user = interaction.user;
     }
 
     logger.verbose(
       `/status command was used by ${interaction.user.username}#${
         interaction.user.discriminator
-      } -  targeted: ${!!userHashParam} userHash: ${userHash} userId: ${
-        user.id
-      }`
+      } -  targeted: ${!!userIdParam} userId: ${user.id}`
     );
 
-    interaction
-      .reply(
-        `I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)\nUser hash: \`${userHash}\``
-      )
-      .catch(logger.error);
+    await interaction.reply({
+      content: `I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)\nUser id: \`${userId}\``,
+      ephemeral: true,
+    });
 
-    const embed = await status(user, userHash);
-    interaction.channel.send({ embeds: [embed] }).catch(logger.error);
-  }
-
-  @Slash("guild-status")
-  async guildStatus(
-    @SlashOption("guildid", {
-      required: false,
-      description: "Id of a guild",
-    })
-    guildId: number,
-    interaction: CommandInteraction
-  ): Promise<void> {
-    logger.verbose(
-      `guildStatus command was used by ${interaction.user.username}#${interaction.user.discriminator} guildId: ${guildId}`
-    );
-    interaction
-      .reply(
-        `I'll update the whole Guild accesses as soon as possible. (\nGuildID: \`${guildId}\``
-      )
-      .catch(logger.error);
-    guildStatusUpdate(+guildId)
-      .then()
-      .catch(logger.error);
+    const embed = await status(user);
+    await interaction.editReply({
+      content: `User id: \`${user.id}\``,
+      embeds: [embed],
+    });
   }
 
   @Slash("join")
   async join(interaction: CommandInteraction) {
     if (interaction.channel.type === "DM") {
       interaction.reply(
-        "Use this command in a server to join all of its guilds you have access to!"
+        "❌ Use this command in a server to join all of its guilds you have access to!"
       );
       return;
     }
@@ -115,21 +90,27 @@ abstract class Slashes {
   async guilds(interaction: CommandInteraction) {
     if (interaction.channel.type === "DM") {
       interaction.reply(
-        "Use this command in a server to list all of its guilds!"
+        "❌ Use this command in a server to list all of its guilds!"
       );
       return;
     }
 
     const pages = await guilds(interaction.guild.id);
     if (!pages) {
-      interaction.reply("❌ The backend couldn't handle the request.");
+      interaction.reply({
+        content: "❌ The backend couldn't handle the request.",
+        ephemeral: true,
+      });
       return;
     }
 
     if (pages.length === 0) {
-      interaction.reply("❌ There are no guilds associated with this server.");
+      interaction.reply({
+        content: "❌ There are no guilds associated with this server.",
+        ephemeral: true,
+      });
     } else if (pages.length === 1) {
-      interaction.reply({ embeds: [pages[0]] });
+      interaction.reply({ embeds: [pages[0]], ephemeral: true });
     } else {
       new Pagination(
         interaction,
@@ -164,9 +145,10 @@ abstract class Slashes {
     }
 
     if (interaction.guild.id === "886314998131982336") {
-      interaction.reply(
-        "You can't use this command in the Official Guild Server!"
-      );
+      interaction.reply({
+        content: "You can't use this command in the Official Guild Server!",
+        ephemeral: true,
+      });
       return;
     }
 

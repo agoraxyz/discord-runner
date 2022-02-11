@@ -2,7 +2,7 @@ import axios from "axios";
 import { LevelInfo } from "./api/types";
 import config from "./config";
 import logger from "./utils/logger";
-import { getUserHash, logAxiosResponse, logBackendError } from "./utils/utils";
+import { logAxiosResponse, logBackendError } from "./utils/utils";
 
 const API_BASE_URL = config.backendUrl;
 const PLATFORM = "DISCORD";
@@ -10,11 +10,10 @@ const PLATFORM = "DISCORD";
 const userJoined = async (platformUserId: string, serverId: string) => {
   logger.verbose(`userJoined params: ${platformUserId}, ${serverId}`);
   try {
-    const userHash = await getUserHash(platformUserId);
-    logger.verbose(`userJoined userHash - ${userHash}`);
+    logger.verbose(`userJoined userId - ${platformUserId}`);
     const response = await axios.post(`${API_BASE_URL}/user/joinedPlatform`, {
       platform: PLATFORM,
-      platformUserId: userHash,
+      platformUserId,
       serverId,
     });
     logger.verbose(`joinedPlatform result:`);
@@ -27,13 +26,12 @@ const userJoined = async (platformUserId: string, serverId: string) => {
   }
 };
 
-const userRemoved = async (dcUserId: string, serverId: string) => {
-  const userHash = await getUserHash(dcUserId);
-  logger.verbose(`userRemoved userHash - ${userHash}`);
+const userRemoved = async (platformUserId: string, serverId: string) => {
+  logger.verbose(`userRemoved userId - ${platformUserId}`);
   axios
     .post(`${API_BASE_URL}/user/removeFromPlatform`, {
       platform: PLATFORM,
-      platformUserId: userHash,
+      platformUserId,
       serverId,
       triggerKick: false,
     })
@@ -41,12 +39,12 @@ const userRemoved = async (dcUserId: string, serverId: string) => {
 };
 
 const statusUpdate = async (
-  userHash: string
+  platformUserId: string
 ): Promise<LevelInfo[] | undefined> => {
-  logger.verbose(`statusUpdate params: ${userHash}`);
+  logger.verbose(`statusUpdate params: ${platformUserId}`);
   try {
     const response = await axios.post(`${API_BASE_URL}/user/statusUpdate`, {
-      discordId: userHash,
+      discordId: platformUserId,
     });
     logAxiosResponse(response);
     return response.data;

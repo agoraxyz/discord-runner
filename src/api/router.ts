@@ -8,7 +8,7 @@ const createRouter = () => {
   router.post(
     "/upgrade",
     validators.bodyDiscordId("guildId"),
-    validators.bodyUserHash("userHash"),
+    validators.bodyDiscordId("platformUserId"),
     validators.bodyDiscordId("roleId"),
     validators.messageValidator,
     controller.upgrade
@@ -17,7 +17,7 @@ const createRouter = () => {
   router.post(
     "/downgrade",
     validators.bodyDiscordId("guildId"),
-    validators.bodyUserHash("userHash"),
+    validators.bodyDiscordId("platformUserId"),
     validators.bodyDiscordId("roleId"),
     validators.messageValidator,
     controller.downgrade
@@ -33,14 +33,14 @@ const createRouter = () => {
   router.post(
     "/isMember",
     validators.bodyDiscordId("serverId"),
-    validators.bodyUserHash("userHash"),
+    validators.bodyDiscordId("platformUserId"),
     controller.isMember
   );
 
   router.delete(
-    "/kick/:guildId/:userHash",
+    "/kick/:guildId/:platformUserId",
     validators.paramDiscordId("guildId"),
-    validators.paramUserHash("userHash"),
+    validators.paramDiscordId("platformUserId"),
     controller.removeUser
   );
 
@@ -115,15 +115,9 @@ const createRouter = () => {
   );
 
   router.get(
-    "/administeredServers/:userHash",
-    validators.paramUserHash("userHash"),
+    "/administeredServers/:platformUserId",
+    validators.paramDiscordId("platformUserId"),
     controller.administeredServers
-  );
-
-  router.get(
-    "/hashUserId/:userId",
-    validators.paramDiscordId("userId"),
-    controller.hashUserId
   );
 
   router.get(
@@ -135,7 +129,7 @@ const createRouter = () => {
   router.post(
     "/owner/",
     validators.bodyDiscordId("guildId"),
-    validators.bodyUserHash("userHash"),
+    validators.bodyDiscordId("platformUserId"),
     controller.getServerOwner
   );
 
