@@ -5,8 +5,6 @@ import { Pagination } from "@discordx/utilities";
 import { guilds, join, ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
-import { createJoinInteractionPayload } from "../utils/utils";
-import { getGuildsOfServer } from "../service";
 
 @Discord()
 abstract class Slashes {
@@ -123,56 +121,6 @@ abstract class Slashes {
             }
       ).send();
     }
-  }
-
-  @Slash("join-button")
-  async joinButton(
-    @SlashOption("messagetext", {
-      required: false,
-      description: "The text that will be shown in the embed message.",
-    })
-    messageText: string,
-    @SlashOption("buttontext", {
-      required: false,
-      description: "The text that will be shown on the button.",
-    })
-    buttonText: string,
-    interaction: CommandInteraction
-  ) {
-    if (interaction.channel.type === "DM") {
-      interaction.reply("Use this command in a server to spawn a join button!");
-      return;
-    }
-
-    if (interaction.guild.id === "886314998131982336") {
-      interaction.reply({
-        content: "You can't use this command in the Official Guild Server!",
-        ephemeral: true,
-      });
-      return;
-    }
-
-    const guild = await getGuildsOfServer(interaction.guild.id);
-    if (!guild) {
-      await interaction.reply({
-        content: "There are no guilds in this server.",
-        ephemeral: true,
-      });
-      return;
-    }
-
-    const payload = createJoinInteractionPayload(
-      guild[0],
-      messageText,
-      buttonText
-    );
-
-    await interaction.channel.send(payload);
-
-    await interaction.reply({
-      content: "Join button created successfully.",
-      ephemeral: true,
-    });
   }
 }
 
