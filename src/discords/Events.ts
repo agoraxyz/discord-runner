@@ -7,7 +7,6 @@ import {
   PartialGuildMember,
 } from "discord.js";
 import { Discord, Guard, On } from "discordx";
-import config from "../config";
 import IsDM from "../guards/IsDM";
 import NotABot from "../guards/NotABot";
 import NotACommand from "../guards/NotACommand";
@@ -30,9 +29,9 @@ abstract class Events {
     );
     const embed = new MessageEmbed({
       title: "I'm sorry, but I couldn't interpret your request.",
-      color: `#${config.embedColor}`,
+      color: `#ff0000`,
       description:
-        "You can find more information on [agora.xyz](https://agora.xyz) or on [alpha.guild.xyz](https://alpha.guild.xyz).",
+        "➡️ You can find more information on [agora.xyz](https://agora.xyz) or on [alpha.guild.xyz](https://alpha.guild.xyz).",
     });
     message.channel.send({ embeds: [embed] }).catch(logger.error);
   }

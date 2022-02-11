@@ -102,7 +102,7 @@ const createJoinInteractionPayload = (
         title: guild?.name || "Guild",
         url: `${config.guildUrl}/${guild.urlName}`,
         description: guild.description,
-        color: "DARKER_GREY",
+        color: `#${config.embedColor}`,
         footer: {
           text:
             messageText ||
