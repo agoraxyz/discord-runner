@@ -35,7 +35,7 @@ abstract class SimpleCommands {
 
     if (!guildId) {
       await command.message.author.send(
-        "You have to provide a guild-id.\nFor example: `!guild-id 123456789012345678`"
+        "❌ You have to provide a guild-id.\nFor example: `!guild-id 123456789012345678`"
       );
       return;
     }
@@ -54,7 +54,7 @@ abstract class SimpleCommands {
   ) {
     if (command.message.channel.type === "DM") {
       await command.message.channel.send(
-        "Use this command in a server to spawn a join button!"
+        "❌ Use this command in a server to spawn a join button!"
       );
       return;
     }
@@ -63,26 +63,28 @@ abstract class SimpleCommands {
 
     if (command.message.guild.id === "886314998131982336") {
       await command.message.author.send(
-        "You can't use this command in the Official Guild Server!"
+        "❌ You can't use this command in the Official Guild Server!"
       );
       return;
     }
 
     const guild = await getGuildsOfServer(command.message.guild.id);
     if (!guild) {
-      await command.message.author.send("There are no guilds in this server.");
+      await command.message.author.send(
+        "❌ There are no guilds in this server."
+      );
       return;
     }
 
     const payload = createJoinInteractionPayload(
       guild[0],
       messageText,
-      buttonText.slice(0, 80)
+      buttonText?.slice(0, 80)
     );
 
     await command.message.channel.send(payload);
 
-    await command.message.author.send("Join button created successfully.");
+    await command.message.author.send("✅ Join button created successfully.");
   }
 }
 
