@@ -107,7 +107,7 @@ const createJoinInteractionPayload = (
         footer: {
           text:
             messageText ||
-            "Click the button to get access for the desired Guild(s)!",
+            "Click the button to get access for the desired Role(s)!",
         },
       }),
     ],
