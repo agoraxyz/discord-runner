@@ -83,8 +83,6 @@ abstract class SimpleCommands {
     );
 
     await command.message.channel.send(payload);
-
-    await command.message.author.send("✅ Join button created successfully.");
   }
 }
 
