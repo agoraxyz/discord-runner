@@ -54,11 +54,11 @@ const notifyAccessedChannels = async (
 
   let message: string;
   if (accessedChannels.size === 0) {
-    message = `You got access to the \`${guildName}\` guild in \`${member.guild.name}\`.`;
+    message = `You got access to the \`${guildName}\` role in \`${member.guild.name}\`.`;
   } else {
     message = `You got access to ${
       accessedChannels.size > 1 ? "these channels" : "this channel"
-    } with the \`${guildName}\` guild in \`${member.guild.name}\`:`;
+    } with the \`${guildName}\` role in \`${member.guild.name}\`:`;
   }
 
   const embed = new MessageEmbed({
@@ -126,7 +126,7 @@ const manageRoles = async (
     } else {
       updatedMember = await member.roles.remove(roleId);
       const embed = new MessageEmbed({
-        title: `You no longer have access to the \`${message}\` guild in \`${guild.name}\`, because you have not fulfilled the requirements or just left it.`,
+        title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements or just left it.`,
         color: `#${config.embedColor}`,
       });
       try {
