@@ -133,6 +133,12 @@ const createRouter = () => {
     controller.getServerOwner
   );
 
+  router.get(
+    "/user/:platformUserId",
+    validators.paramDiscordId("platformUserId"),
+    controller.getUser
+  );
+
   return router;
 };
 

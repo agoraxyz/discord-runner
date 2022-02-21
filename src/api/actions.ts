@@ -438,6 +438,8 @@ const getServerOwner = async (guildId: string, userId: string) => {
   return guild.ownerId === userId;
 };
 
+const getUser = async (userId: string) => Main.Client.users.fetch(userId);
+
 export {
   manageRoles,
   generateInvite,
@@ -456,4 +458,5 @@ export {
   deleteRole,
   sendJoinButton,
   getServerOwner,
+  getUser,
 };

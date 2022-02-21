@@ -19,6 +19,7 @@ import {
   sendJoinButton,
   deleteRole,
   getServerOwner,
+  getUser,
 } from "./actions";
 import {
   CreateChannelParams,
@@ -340,6 +341,23 @@ const controller = {
     try {
       const { guildId, platformUserId } = req.body;
       const result = await getServerOwner(guildId, platformUserId);
+      res.status(200).json(result);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
+  },
+
+  getUser: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      const { platformUserId } = req.params;
+      const result = await getUser(platformUserId);
       res.status(200).json(result);
     } catch (error) {
       const errorMsg = getErrorResult(error);
