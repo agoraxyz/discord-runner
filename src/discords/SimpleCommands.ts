@@ -5,10 +5,11 @@ import {
   SimpleCommandMessage,
   SimpleCommandOption,
 } from "discordx";
-import { ping } from "../commands";
-import { getGuildsOfServer, guildStatusUpdate } from "../service";
+import { User } from "discord.js";
+import { ping, status } from "../commands";
+import Main from "../Main";
 import logger from "../utils/logger";
-import { createJoinInteractionPayload } from "../utils/utils";
+import { guildStatusUpdate } from "../service";
 
 @Discord()
 abstract class SimpleCommands {
@@ -46,43 +47,32 @@ abstract class SimpleCommands {
     await guildStatusUpdate(guildId);
   }
 
-  @SimpleCommand("join-button")
-  async joinButton(
-    @SimpleCommandOption("message-text") messageText: string,
-    @SimpleCommandOption("button-text") buttonText: string,
+  @SimpleCommand("status")
+  async status(
+    @SimpleCommandOption("userid") userIdParam: string,
     command: SimpleCommandMessage
   ) {
-    if (command.message.channel.type === "DM") {
-      await command.message.channel.send(
-        "❌ Use this command in a server to spawn a join button!"
-      );
+    if (command.message.deletable) {
+      await command.message.delete();
+    }
+
+    let userId: string;
+    let user: User;
+    if (userIdParam) {
+      userId = userIdParam;
+    } else {
+      userId = command.message.author.id;
+    }
+
+    try {
+      user = await Main.Client.users.fetch(userId);
+    } catch (error) {
+      await command.message.author.send("Invalid userId.");
       return;
     }
 
-    await command.message.delete();
-
-    if (command.message.guild.id === "886314998131982336") {
-      await command.message.author.send(
-        "❌ You can't use this command in the Official Guild Server!"
-      );
-      return;
-    }
-
-    const guild = await getGuildsOfServer(command.message.guild.id);
-    if (!guild) {
-      await command.message.author.send(
-        "❌ There are no guilds in this server."
-      );
-      return;
-    }
-
-    const payload = createJoinInteractionPayload(
-      guild[0],
-      messageText,
-      buttonText?.slice(0, 80)
-    );
-
-    await command.message.channel.send(payload);
+    const embed = await status(user);
+    await command.message.author.send({ embeds: [embed] });
   }
 }
 
