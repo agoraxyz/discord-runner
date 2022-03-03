@@ -1,15 +1,15 @@
 /* eslint-disable class-methods-use-this */
-import { CommandInteraction, User } from "discord.js";
+import { CommandInteraction, GuildMember, Permissions } from "discord.js";
 import { Discord, Slash, SlashOption } from "discordx";
-import { Pagination } from "@discordx/utilities";
-import { guilds, join, ping, status } from "../commands";
-import Main from "../Main";
+import { join, ping, status } from "../commands";
 import logger from "../utils/logger";
+import { createJoinInteractionPayload } from "../utils/utils";
+import { getGuildsOfServer } from "../service";
 
 @Discord()
 abstract class Slashes {
   @Slash("ping", {
-    description: "Get the latency of the bot and the discord API.",
+    description: "Get the latency of the bot and the Discord API.",
   })
   ping(interaction: CommandInteraction): void {
     logger.verbose(
@@ -20,44 +20,27 @@ abstract class Slashes {
       .catch(logger.error);
   }
 
-  @Slash("status")
-  async status(
-    @SlashOption("userid", {
-      required: false,
-      description: "Id of a user.",
-    })
-    userIdParam: string,
-    interaction: CommandInteraction
-  ): Promise<void> {
-    let userId: string;
-    let user: User;
-    if (userIdParam) {
-      userId = userIdParam;
-      user = await Main.Client.users.fetch(userId);
-    } else {
-      userId = interaction.user.id;
-      user = interaction.user;
-    }
-
+  @Slash("status", {
+    description: "Update all of your guild accesses in every server.",
+  })
+  async status(interaction: CommandInteraction): Promise<void> {
     logger.verbose(
-      `/status command was used by ${interaction.user.username}#${
-        interaction.user.discriminator
-      } -  targeted: ${!!userIdParam} userId: ${user.id}`
+      `/status command was used by ${interaction.user.username}#${interaction.user.discriminator} userId: ${interaction.user.id}`
     );
 
     await interaction.reply({
-      content: `I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)\nUser id: \`${userId}\``,
+      content: `I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)`,
       ephemeral: true,
     });
 
-    const embed = await status(user);
+    const embed = await status(interaction.user);
     await interaction.editReply({
-      content: `User id: \`${user.id}\``,
+      content: null,
       embeds: [embed],
     });
   }
 
-  @Slash("join")
+  @Slash("join", { description: "Join the guild of this server." })
   async join(interaction: CommandInteraction) {
     if (interaction.channel.type === "DM") {
       interaction.reply(
@@ -84,43 +67,60 @@ abstract class Slashes {
     await interaction.editReply(messagePayload);
   }
 
-  @Slash("guilds")
-  async guilds(interaction: CommandInteraction) {
+  @Slash("join-button", {
+    description: "Generate a join button. (Only for server administrators!)",
+  })
+  async joinButton(
+    @SlashOption("messagetext", {
+      required: false,
+      description: "The text that will be shown in the embed message.",
+    })
+    messageText: string,
+    @SlashOption("buttontext", {
+      required: false,
+      description: "The text that will be shown on the button.",
+    })
+    buttonText: string,
+    interaction: CommandInteraction
+  ) {
     if (interaction.channel.type === "DM") {
-      interaction.reply(
-        "❌ Use this command in a server to list all of its guilds!"
-      );
+      interaction.reply("Use this command in a server to spawn a join button!");
       return;
     }
 
-    const pages = await guilds(interaction.guild.id);
-    if (!pages) {
+    if (
+      !(interaction.member as GuildMember).permissions.has(
+        Permissions.FLAGS.ADMINISTRATOR
+      )
+    ) {
       interaction.reply({
-        content: "❌ The backend couldn't handle the request.",
+        content: "❌ Only server admins can use this command.",
         ephemeral: true,
       });
       return;
     }
 
-    if (pages.length === 0) {
-      interaction.reply({
-        content: "❌ There are no guilds associated with this server.",
+    const guild = await getGuildsOfServer(interaction.guild.id);
+    if (!guild) {
+      await interaction.reply({
+        content: "❌ There are no guilds in this server.",
         ephemeral: true,
       });
-    } else if (pages.length === 1) {
-      interaction.reply({ embeds: [pages[0]], ephemeral: true });
-    } else {
-      new Pagination(
-        interaction,
-        pages,
-        pages.length <= 10
-          ? { type: "BUTTON" }
-          : {
-              type: "SELECT_MENU",
-              pageText: pages.map((p) => `${p.title} ({page}/${pages.length})`),
-            }
-      ).send();
+      return;
     }
+
+    const payload = createJoinInteractionPayload(
+      guild[0],
+      messageText,
+      buttonText
+    );
+
+    await interaction.channel.send(payload);
+
+    await interaction.reply({
+      content: "✅ Join button created successfully.",
+      ephemeral: true,
+    });
   }
 }
 
