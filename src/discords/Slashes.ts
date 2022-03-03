@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import { guilds, join, ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
+import { NewPoll } from "../api/types";
 
 @Discord()
 abstract class Slashes {
@@ -172,19 +173,80 @@ abstract class Slashes {
     }
   }
 
-  /*
   @Slash("enough", { description: "Skips adding poll options." })
-  async enough(interaction: CommandInteraction) {}
+  async enough(interaction: CommandInteraction) {
+    if (interaction.channel.type === "DM") {
+      const db = new JSONdb("polls.json");
+      const authorId = interaction.user.id;
+      const poll = db.get(authorId) as NewPoll;
 
+      if (poll.status === 2) {
+        poll.status += 1;
+
+        interaction.reply(
+          "Give me the end date of the poll in the DD:HH:mm format"
+        );
+
+        db.set(authorId, poll);
+        db.sync();
+      } else {
+        interaction.reply("You didn't finish the previous steps.");
+      }
+    } else {
+      interaction.reply({
+        content: "You have to use this command in DM.",
+        ephemeral: true,
+      });
+    }
+  }
+
+  /*
   @Slash("done", { description: "Finalizes a poll." })
   async done(interaction: CommandInteraction) {}
+  */
 
   @Slash("reset", { description: "Restarts poll creation." })
-  async reset(interaction: CommandInteraction) {}
+  async reset(interaction: CommandInteraction) {
+    const db = new JSONdb("polls.json");
+    const authorId = interaction.user.id;
+
+    if (db.delete(authorId)) {
+      db.set(authorId, { status: 0 } as NewPoll);
+
+      interaction.reply({
+        content: "The current poll creation procedure has been restarted.",
+        ephemeral: interaction.channel.type !== "DM",
+      });
+    } else {
+      interaction.reply({
+        content: "You have no active poll creation procedure.",
+        ephemeral: interaction.channel.type !== "DM",
+      });
+    }
+
+    db.sync();
+  }
 
   @Slash("cancel", { description: "Cancels poll creation." })
-  async cancel(interaction: CommandInteraction) {}
+  async cancel(interaction: CommandInteraction) {
+    const db = new JSONdb("polls.json");
 
+    if (db.delete(interaction.user.id)) {
+      interaction.reply({
+        content: "The current poll creation procedure has been cancelled.",
+        ephemeral: interaction.channel.type !== "DM",
+      });
+    } else {
+      interaction.reply({
+        content: "You have no active poll creation procedure.",
+        ephemeral: interaction.channel.type !== "DM",
+      });
+    }
+
+    db.sync();
+  }
+
+  /*
   @Slash("endpoll", { description: "Closes a poll." })
   async endPoll(interaction: CommandInteraction) {}
   */

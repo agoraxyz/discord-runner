@@ -61,6 +61,33 @@ type InviteData = {
   inviteChannelId: string;
 };
 
+type NewPoll = {
+  // poll creation
+  status: number;
+  // Discord
+  channelId: string;
+  // poll
+  question: string;
+  options: string[];
+  reactions: string[];
+  endDate: string;
+};
+
+type Poll = {
+  // Discord
+  channelId: string;
+  messageId: string;
+  // poll
+  question: string;
+  options: string[];
+  reactions: string[];
+  endDate: string;
+  // voting
+  ended: boolean;
+  voteCount: number;
+  results: number[];
+};
+
 export {
   ManageRolesParams,
   CreateChannelParams,
@@ -73,4 +100,6 @@ export {
   DiscordChannel,
   LevelInfo,
   InviteData,
+  NewPoll,
+  Poll,
 };

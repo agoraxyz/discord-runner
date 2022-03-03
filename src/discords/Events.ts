@@ -8,7 +8,9 @@ import {
   RateLimitData,
 } from "discord.js";
 import { Discord, Guard, On } from "discordx";
+import JSONdb from "simple-json-db";
 import IsDM from "../guards/IsDM";
+import { NewPoll } from "../api/types";
 import NotABot from "../guards/NotABot";
 import NotACommand from "../guards/NotACommand";
 import Main from "../Main";
@@ -30,16 +32,26 @@ abstract class Events {
   @On("messageCreate")
   @Guard(NotABot, IsDM, NotACommand)
   onPrivateMessage([message]: [Message]): void {
-    logger.verbose(
-      `unkown request: ${message.author.username}#${message.author.discriminator}: ${message.content}`
-    );
-    const embed = new MessageEmbed({
-      title: "I'm sorry, but I couldn't interpret your request.",
-      color: `#ff0000`,
-      description:
-        "You can find more information on [agora.xyz](https://agora.xyz) or on [guild.xyz](https://guild.xyz).",
-    });
-    message.channel.send({ embeds: [embed] }).catch(logger.error);
+    const db = new JSONdb("polls.json");
+    const authorId = message.author.id;
+    const poll = db.get(authorId) as NewPoll;
+
+    if (poll) {
+      // TODO: finish this
+    } else {
+      const embed = new MessageEmbed({
+        title: "I'm sorry, but I couldn't interpret your request.",
+        color: `#ff0000`,
+        description:
+          "You can find more information on [agora.xyz](https://agora.xyz) or on [guild.xyz](https://guild.xyz).",
+      });
+
+      message.channel.send({ embeds: [embed] }).catch(logger.error);
+
+      logger.verbose(
+        `unkown request: ${message.author.username}#${message.author.discriminator}: ${message.content}`
+      );
+    }
   }
 
   @On("guildMemberAdd")
