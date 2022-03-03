@@ -2,6 +2,8 @@
 import { CommandInteraction, User } from "discord.js";
 import { Discord, Slash, SlashOption } from "discordx";
 import { Pagination } from "@discordx/utilities";
+import JSONdb from "simple-json-db";
+import dayjs from "dayjs";
 import { guilds, join, ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
@@ -122,6 +124,70 @@ abstract class Slashes {
       ).send();
     }
   }
+
+  // Slash commands for voting
+
+  @Slash("poll", { description: "Creates a poll." })
+  async poll(interaction: CommandInteraction) {
+    const owner = await interaction.guild.fetchOwner();
+
+    if (
+      interaction.channel.type !== "DM" &&
+      !interaction.user.bot &&
+      interaction.user.id === owner.id
+    ) {
+      const db = new JSONdb("polls.json");
+      db.set(interaction.user.id, {
+        status: 0,
+        optionIdx: 0,
+        channelId: interaction.channelId,
+        options: [],
+        reactions: [],
+        endDate: dayjs(),
+      });
+      db.sync();
+
+      interaction.user
+        .send(
+          "Give me the subject of the poll. For example:\n" +
+            '"Do you think drinking milk is cool?"'
+        )
+        .then(() =>
+          interaction.reply({
+            content: "Check your DM's",
+            ephemeral: true,
+          })
+        );
+    } else if (interaction.user.id !== owner.id) {
+      interaction.reply({
+        content: "Seems like you are not the guild owner",
+        ephemeral: true,
+      });
+    } else {
+      interaction.reply({
+        content:
+          "You have to use this command in the channel " +
+          "you want the poll to appear",
+      });
+    }
+  }
+
+  /*
+  @Slash("enough", { description: "Skips adding poll options." })
+  async enough(interaction: CommandInteraction) {}
+
+  @Slash("done", { description: "Finalizes a poll." })
+  async done(interaction: CommandInteraction) {}
+
+  @Slash("reset", { description: "Restarts poll creation." })
+  async reset(interaction: CommandInteraction) {}
+
+  @Slash("cancel", { description: "Cancels poll creation." })
+  async cancel(interaction: CommandInteraction) {}
+
+  @Slash("endpoll", { description: "Closes a poll." })
+  async endPoll(interaction: CommandInteraction) {}
+  */
 }
 
 export default Slashes;
