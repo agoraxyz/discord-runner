@@ -1,10 +1,10 @@
 /* eslint no-return-await: "off" */
 
 import { CommandInteraction, TextChannel } from "discord.js";
-import { NewPoll } from "./api/types";
-import Main from "./Main";
-import DB from "./testdb/db";
-import logger from "./utils/logger";
+import { NewPoll } from "./types";
+import Main from "../Main";
+import DB from "../testdb/db";
+import logger from "../utils/logger";
 
 const createPoll = async (
   _poll: NewPoll,

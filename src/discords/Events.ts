@@ -1,13 +1,16 @@
 /* eslint-disable class-methods-use-this */
 /* eslint no-return-await: "off" */
+/* eslint no-underscore-dangle: "off" */
 
 import {
+  ClientUser,
   GuildMember,
   Invite,
   Message,
   MessageEmbed,
   PartialGuildMember,
   RateLimitData,
+  ReactionEmoji,
 } from "discord.js";
 import { Discord, Guard, On } from "discordx";
 import JSONdb from "simple-json-db";
@@ -19,6 +22,95 @@ import NotACommand from "../guards/NotACommand";
 import Main from "../Main";
 import { userJoined, userRemoved } from "../service";
 import logger from "../utils/logger";
+import DB from "../testdb/db";
+import getReactions from "../api/reactions";
+
+const messageReactionCommon = async (reaction, user, removed: boolean) => {
+  if (!user.bot) {
+    if (reaction.partial) {
+      try {
+        await reaction.fetch();
+      } catch (error) {
+        logger.error("Something went wrong when fetching the message:", error);
+
+        return;
+      }
+    }
+
+    const msg = reaction.message;
+
+    const entries = DB.getKeys()
+      .map((key) => ({ key, poll: DB.get(key) }))
+      .filter(
+        (entry) =>
+          entry.poll.channelId === msg.channelId &&
+          entry.poll.messageId === msg.id
+      );
+
+    if (entries !== [] && entries !== undefined) {
+      const { key } = entries[0];
+      const { poll } = entries[0];
+
+      if (!removed) {
+        const emoji = reaction._emoji;
+
+        let userReactions;
+
+        if (
+          poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
+          poll.reactions.includes(emoji.name)
+        ) {
+          userReactions = msg.reactions.cache.filter(
+            (react) => react.users.cache.has(user.id) && react._emoji !== emoji
+          );
+        } else {
+          userReactions = msg.reactions.cache.filter(
+            (react) => react.users.cache.has(user.id) && react._emoji === emoji
+          );
+        }
+
+        try {
+          Array.from(userReactions.values()).map(
+            async (react) => await (react as any).users.remove(user.id)
+          );
+        } catch (error) {
+          logger.error("Failed to remove reaction:", error);
+        }
+      }
+
+      const reacResults = (
+        await getReactions(poll.channelId, poll.messageId, poll.reactions)
+      ).map((react) => react.users.length);
+
+      poll.results = reacResults;
+      poll.voteCount = reacResults.reduce((a, b) => a + b);
+
+      let content = `Poll #${DB.lastId()}:\n\n${poll.question}\n`;
+
+      for (let i = 0; i < poll.options.length; i += 1) {
+        let percentage = `${(reacResults[i] / poll.voteCount) * 100}`;
+
+        if (Number(percentage) % 1 !== 0) {
+          percentage = Number(percentage).toFixed(2);
+        }
+
+        if (percentage === "NaN") {
+          percentage = "0";
+        }
+
+        content += `\n${poll.reactions[i]} ${poll.options[i]} (${percentage}%)`;
+      }
+
+      content += `\n\n${poll.voteCount} person${
+        poll.voteCount > 1 || poll.voteCount === 0 ? "s" : ""
+      } voted so far.`;
+
+      await msg.edit(content);
+
+      DB.set(Number(key), poll);
+    }
+  }
+};
 
 @Discord()
 abstract class Events {
@@ -168,6 +260,16 @@ abstract class Events {
           });
       }
     });
+  }
+
+  @On("messageReactionAdd")
+  onMessageReactionAdd([reaction, user]: [ReactionEmoji, ClientUser]): void {
+    messageReactionCommon(reaction, user, false);
+  }
+
+  @On("messageReactionRemove")
+  onMessageReactionRemove([reaction, user]: [ReactionEmoji, ClientUser]): void {
+    messageReactionCommon(reaction, user, true);
   }
 }
 

@@ -88,6 +88,11 @@ type Poll = {
   results: number[];
 };
 
+type Reaction = {
+  name: string;
+  users: string[];
+};
+
 export {
   ManageRolesParams,
   CreateChannelParams,
@@ -102,4 +107,5 @@ export {
   InviteData,
   NewPoll,
   Poll,
+  Reaction,
 };

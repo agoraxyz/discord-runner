@@ -28,6 +28,7 @@ class Main {
         Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
         Intents.FLAGS.GUILD_PRESENCES,
         Intents.FLAGS.DIRECT_MESSAGES,
+        Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
       ],
       classes: [`${__dirname}/discords/*.{js,ts}`],
       partials: ["MESSAGE", "CHANNEL", "REACTION"],

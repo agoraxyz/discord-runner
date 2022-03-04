@@ -8,7 +8,7 @@ import { guilds, join, ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
 import { NewPoll } from "../api/types";
-import { createPoll, endPoll } from "../polls";
+import { createPoll, endPoll } from "../api/polls";
 
 @Discord()
 abstract class Slashes {
