@@ -4,6 +4,7 @@ import { Client } from "discordx";
 import api from "./api/api";
 import { InviteData } from "./api/types";
 import config from "./config";
+import DB from "./testdb/db";
 import logger from "./utils/logger";
 
 class Main {
@@ -34,6 +35,8 @@ class Main {
       // rejectOnRateLimit: ["/"],
       restGlobalRateLimit: 50,
     });
+
+    DB.init();
 
     this._client.on("ready", async () => {
       logger.info(">> Bot started");

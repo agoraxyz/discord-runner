@@ -8,6 +8,7 @@ import { guilds, join, ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
 import { NewPoll } from "../api/types";
+import { createPoll, endPoll } from "../polls";
 
 @Discord()
 abstract class Slashes {
@@ -161,14 +162,14 @@ abstract class Slashes {
         );
     } else if (interaction.user.id !== owner.id) {
       interaction.reply({
-        content: "Seems like you are not the guild owner",
+        content: "Seems like you are not the guild owner.",
         ephemeral: true,
       });
     } else {
       interaction.reply({
         content:
           "You have to use this command in the channel " +
-          "you want the poll to appear",
+          "you want the poll to appear.",
       });
     }
   }
@@ -200,10 +201,29 @@ abstract class Slashes {
     }
   }
 
-  /*
   @Slash("done", { description: "Finalizes a poll." })
-  async done(interaction: CommandInteraction) {}
-  */
+  async done(interaction: CommandInteraction) {
+    const db = new JSONdb("polls.json");
+    const authorId = interaction.user.id;
+    const poll = db.get(authorId) as NewPoll;
+
+    if (poll && poll.status === 3) {
+      await createPoll(poll);
+
+      interaction.reply({
+        content: "The poll has been created.",
+        ephemeral: interaction.channel.type === "DM",
+      });
+
+      db.delete(authorId);
+      db.sync();
+    } else {
+      interaction.reply({
+        content: "Poll creation procedure is not finished, you must continue.",
+        ephemeral: interaction.channel.type === "DM",
+      });
+    }
+  }
 
   @Slash("reset", { description: "Restarts poll creation." })
   async reset(interaction: CommandInteraction) {
@@ -246,10 +266,18 @@ abstract class Slashes {
     db.sync();
   }
 
-  /*
   @Slash("endpoll", { description: "Closes a poll." })
-  async endPoll(interaction: CommandInteraction) {}
-  */
+  async endPoll(
+    @SlashOption("id", {
+      description: "The ID of the poll you want to close.",
+      type: "NUMBER",
+      required: true,
+    })
+    id: number,
+    interaction: CommandInteraction
+  ) {
+    endPoll(`${id}`, interaction);
+  }
 }
 
 export default Slashes;
