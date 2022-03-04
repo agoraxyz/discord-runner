@@ -181,7 +181,11 @@ abstract class Slashes {
       const authorId = interaction.user.id;
       const poll = db.get(authorId) as NewPoll;
 
-      if (poll.status === 2) {
+      if (
+        poll.status === 1 &&
+        poll.options.length === poll.reactions.length &&
+        poll.options.length >= 2
+      ) {
         poll.status += 1;
 
         interaction.reply(

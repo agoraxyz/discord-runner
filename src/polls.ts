@@ -88,4 +88,6 @@ const endPoll = async (
   }
 };
 
-export { createPoll, endPoll };
+const hasEnded = async (id: string): Promise<boolean> => DB.get(id).ended;
+
+export { createPoll, endPoll, hasEnded };
