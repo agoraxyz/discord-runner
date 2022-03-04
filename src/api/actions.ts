@@ -352,6 +352,14 @@ const listChannels = async (inviteCode: string) => {
     logger.verbose(`${JSON.stringify(invite)}`);
     try {
       const guild = await Main.Client.guilds.fetch(invite.guild.id);
+      if (!guild.me.permissions.has(Permissions.FLAGS.ADMINISTRATOR)) {
+        return {
+          serverId: invite.guild.id,
+          channels: [],
+          isAdmin: false,
+        };
+      }
+
       logger.verbose(`${JSON.stringify(guild)}`);
       const channels = guild?.channels.cache
         .filter(
@@ -370,11 +378,13 @@ const listChannels = async (inviteCode: string) => {
       return {
         serverId: invite.guild.id,
         channels,
+        isAdmin: true,
       };
     } catch (error) {
       return {
         serverId: invite.guild.id,
         channels: [],
+        isAdmin: false,
       };
     }
   } catch (error) {
