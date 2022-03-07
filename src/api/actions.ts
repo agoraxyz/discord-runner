@@ -384,7 +384,7 @@ const listChannels = async (inviteCode: string) => {
       return {
         serverId: invite.guild.id,
         channels: [],
-        isAdmin: false,
+        isAdmin: null,
       };
     }
   } catch (error) {
