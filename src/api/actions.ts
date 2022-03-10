@@ -443,8 +443,8 @@ const sendJoinButton = async (guildId: string, channelId: string) => {
   const payload = createJoinInteractionPayload(guilds[0]);
 
   const message = await (<TextChannel>channel).send(payload);
-  await message.react("951109839847837717");
-  await message.react("951109839952678942");
+  await message.react(config.joinButtonEmojis.emoji1);
+  await message.react(config.joinButtonEmojis.emoji2);
 
   return true;
 };

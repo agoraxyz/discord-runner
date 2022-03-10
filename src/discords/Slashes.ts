@@ -5,6 +5,7 @@ import { join, ping, status } from "../commands";
 import logger from "../utils/logger";
 import { createJoinInteractionPayload } from "../utils/utils";
 import { getGuildsOfServer } from "../service";
+import config from "../config";
 
 @Discord()
 abstract class Slashes {
@@ -122,8 +123,8 @@ abstract class Slashes {
     );
 
     const message = await interaction.channel.send(payload);
-    await message.react("951109839847837717");
-    await message.react("951109839952678942");
+    await message.react(config.joinButtonEmojis.emoji1);
+    await message.react(config.joinButtonEmojis.emoji2);
 
     await interaction.reply({
       content: "✅ Join button created successfully.",
