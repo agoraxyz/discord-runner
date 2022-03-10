@@ -71,7 +71,12 @@ abstract class Slashes {
     description: "Generate a join button. (Only for server administrators!)",
   })
   async joinButton(
-    @SlashOption("messagetext", {
+    @SlashOption("title", {
+      required: false,
+      description: "The title of the embed message.",
+    })
+    title: string,
+    @SlashOption("message", {
       required: false,
       description: "The text that will be shown in the embed message.",
     })
@@ -111,11 +116,14 @@ abstract class Slashes {
 
     const payload = createJoinInteractionPayload(
       guild[0],
+      title,
       messageText,
       buttonText
     );
 
-    await interaction.channel.send(payload);
+    const message = await interaction.channel.send(payload);
+    await message.react("951109839847837717");
+    await message.react("951109839952678942");
 
     await interaction.reply({
       content: "✅ Join button created successfully.",
