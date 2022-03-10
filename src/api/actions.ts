@@ -352,7 +352,10 @@ const listChannels = async (inviteCode: string) => {
     logger.verbose(`${JSON.stringify(invite)}`);
     try {
       const guild = await Main.Client.guilds.fetch(invite.guild.id);
-      if (!guild.me.permissions.has(Permissions.FLAGS.ADMINISTRATOR)) {
+      if (
+        !guild.me.permissions.has(Permissions.FLAGS.ADMINISTRATOR) &&
+        !guild.me.permissions.has(Permissions.FLAGS.MANAGE_ROLES)
+      ) {
         return {
           serverId: invite.guild.id,
           channels: [],
