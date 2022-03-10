@@ -108,17 +108,17 @@ const createJoinInteractionPayload = (
     embeds: [
       new MessageEmbed({
         title,
-        url: `${config.guildUrl}/${guild.urlName}`,
+        url: guild ? `${config.guildUrl}/${guild?.urlName}` : null,
         description:
           messageText ||
-          guild.description ||
+          guild?.description ||
           "Join this guild and get your role(s)!",
         color: `#${config.embedColor}`,
         author: {
-          name: "Early boomer",
+          name: guild?.name || "Guild",
           iconURL: encodeURI(
-            guild.imageUrl?.startsWith("https")
-              ? guild.imageUrl
+            guild?.imageUrl?.startsWith("https")
+              ? guild?.imageUrl
               : "https://cdn.discordapp.com/attachments/950682012866465833/951448319169802250/kerek.png"
           ),
         },
