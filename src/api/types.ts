@@ -62,18 +62,15 @@ type InviteData = {
 };
 
 type NewPoll = {
-  // poll creation
-  status: number;
-  // Discord
   channelId: string;
-  // poll
   question: string;
   options: string[];
   reactions: string[];
-  endDate: string;
+  expDate: string;
 };
 
 type Poll = {
+  id: number;
   // Discord
   channelId: string;
   messageId: string;
@@ -81,7 +78,7 @@ type Poll = {
   question: string;
   options: string[];
   reactions: string[];
-  endDate: string;
+  expDate: string;
   // voting
   ended: boolean;
   voteCount: number;

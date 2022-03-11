@@ -2,13 +2,11 @@
 import { CommandInteraction, User } from "discord.js";
 import { Discord, Slash, SlashOption } from "discordx";
 import { Pagination } from "@discordx/utilities";
-import JSONdb from "simple-json-db";
-import dayjs from "dayjs";
 import { guilds, join, ping, status } from "../commands";
 import Main from "../Main";
 import logger from "../utils/logger";
-import { NewPoll } from "../api/types";
 import { createPoll, endPoll } from "../api/polls";
+import pollStorage from "../api/pollStorage";
 
 @Discord()
 abstract class Slashes {
@@ -131,40 +129,42 @@ abstract class Slashes {
 
   @Slash("poll", { description: "Creates a poll." })
   async poll(interaction: CommandInteraction) {
-    const owner = await interaction.guild.fetchOwner();
+    if (interaction.channel.type !== "DM" && !interaction.user.bot) {
+      const owner = await interaction.guild.fetchOwner();
 
-    if (
-      interaction.channel.type !== "DM" &&
-      !interaction.user.bot &&
-      interaction.user.id === owner.id
-    ) {
-      const db = new JSONdb("polls.json");
-      db.set(interaction.user.id, {
-        status: 0,
-        optionIdx: 0,
-        channelId: interaction.channelId,
-        options: [],
-        reactions: [],
-        endDate: dayjs(),
-      });
-      db.sync();
+      const userId = interaction.user.id;
 
-      interaction.user
-        .send(
-          "Give me the subject of the poll. For example:\n" +
-            '"Do you think drinking milk is cool?"'
-        )
-        .then(() =>
+      if (userId === owner.id) {
+        const userStep = pollStorage.getUserStep(userId);
+
+        if (userStep) {
           interaction.reply({
-            content: "Check your DM's",
+            content:
+              "You already have an ongoing poll creation process.\n" +
+              "You can cancel it using **/cancel**.",
             ephemeral: true,
-          })
-        );
-    } else if (interaction.user.id !== owner.id) {
-      interaction.reply({
-        content: "Seems like you are not the guild owner.",
-        ephemeral: true,
-      });
+          });
+        } else {
+          pollStorage.initPoll(userId, interaction.channel.id);
+
+          interaction.user
+            .send(
+              "Give me the subject of the poll. For example:\n" +
+                '"Do you think drinking milk is cool?"'
+            )
+            .then(() =>
+              interaction.reply({
+                content: "Check your DM's",
+                ephemeral: true,
+              })
+            );
+        }
+      } else {
+        interaction.reply({
+          content: "Seems like you are not the guild owner.",
+          ephemeral: true,
+        });
+      }
     } else {
       interaction.reply({
         content:
@@ -177,23 +177,19 @@ abstract class Slashes {
   @Slash("enough", { description: "Skips adding poll options." })
   async enough(interaction: CommandInteraction) {
     if (interaction.channel.type === "DM") {
-      const db = new JSONdb("polls.json");
-      const authorId = interaction.user.id;
-      const poll = db.get(authorId) as NewPoll;
+      const userId = interaction.user.id;
+      const poll = pollStorage.getPoll(userId);
 
       if (
-        poll.status === 1 &&
+        pollStorage.getUserStep(userId) === 2 &&
         poll.options.length === poll.reactions.length &&
         poll.options.length >= 2
       ) {
-        poll.status += 1;
+        pollStorage.setUserStep(userId, 3);
 
         interaction.reply(
           "Give me the end date of the poll in the DD:HH:mm format"
         );
-
-        db.set(authorId, poll);
-        db.sync();
       } else {
         interaction.reply("You didn't finish the previous steps.");
       }
@@ -207,35 +203,41 @@ abstract class Slashes {
 
   @Slash("done", { description: "Finalizes a poll." })
   async done(interaction: CommandInteraction) {
-    const db = new JSONdb("polls.json");
-    const authorId = interaction.user.id;
-    const poll = db.get(authorId) as NewPoll;
+    const userId = interaction.user.id;
+    const poll = pollStorage.getPoll(userId);
 
-    if (poll && poll.status === 3) {
-      await createPoll(poll);
+    if (poll && pollStorage.getUserStep(userId) === 4) {
+      if (await createPoll(poll)) {
+        interaction.reply({
+          content: "The poll has been created.",
+          ephemeral: interaction.channel.type !== "DM",
+        });
 
-      interaction.reply({
-        content: "The poll has been created.",
-        ephemeral: interaction.channel.type === "DM",
-      });
-
-      db.delete(authorId);
-      db.sync();
+        pollStorage.deleteMemory(userId);
+      } else {
+        interaction.reply({
+          content: "There was an error while creating the poll.",
+          ephemeral: interaction.channel.type !== "DM",
+        });
+      }
     } else {
       interaction.reply({
         content: "Poll creation procedure is not finished, you must continue.",
-        ephemeral: interaction.channel.type === "DM",
+        ephemeral: interaction.channel.type !== "DM",
       });
     }
   }
 
   @Slash("reset", { description: "Restarts poll creation." })
   async reset(interaction: CommandInteraction) {
-    const db = new JSONdb("polls.json");
-    const authorId = interaction.user.id;
+    const userId = interaction.user.id;
 
-    if (db.delete(authorId)) {
-      db.set(authorId, { status: 0 } as NewPoll);
+    if (pollStorage.getUserStep(userId) > 0) {
+      const poll = pollStorage.getPoll(userId);
+
+      pollStorage.deleteMemory(userId);
+      pollStorage.initPoll(userId, poll.channelId);
+      pollStorage.setUserStep(userId, 1);
 
       interaction.reply({
         content: "The current poll creation procedure has been restarted.",
@@ -247,15 +249,15 @@ abstract class Slashes {
         ephemeral: interaction.channel.type !== "DM",
       });
     }
-
-    db.sync();
   }
 
   @Slash("cancel", { description: "Cancels poll creation." })
   async cancel(interaction: CommandInteraction) {
-    const db = new JSONdb("polls.json");
+    const userId = interaction.user.id;
 
-    if (db.delete(interaction.user.id)) {
+    if (pollStorage.getUserStep(userId) > 0) {
+      pollStorage.deleteMemory(userId);
+
       interaction.reply({
         content: "The current poll creation procedure has been cancelled.",
         ephemeral: interaction.channel.type !== "DM",
@@ -266,8 +268,6 @@ abstract class Slashes {
         ephemeral: interaction.channel.type !== "DM",
       });
     }
-
-    db.sync();
   }
 
   @Slash("endpoll", { description: "Closes a poll." })

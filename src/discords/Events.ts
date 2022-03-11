@@ -13,17 +13,19 @@ import {
   ReactionEmoji,
 } from "discord.js";
 import { Discord, Guard, On } from "discordx";
-import JSONdb from "simple-json-db";
+import utc from "dayjs/plugin/utc";
 import dayjs from "dayjs";
+import axios from "axios";
 import IsDM from "../guards/IsDM";
-import { NewPoll } from "../api/types";
 import NotABot from "../guards/NotABot";
 import NotACommand from "../guards/NotACommand";
 import Main from "../Main";
 import { userJoined, userRemoved } from "../service";
 import logger from "../utils/logger";
-import DB from "../testdb/db";
+import pollStorage from "../api/pollStorage";
+import config from "../config";
 import getReactions from "../api/reactions";
+import { logAxiosResponse } from "../utils/utils";
 
 const messageReactionCommon = async (reaction, user, removed: boolean) => {
   if (!user.bot) {
@@ -39,75 +41,93 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
     const msg = reaction.message;
 
-    const entries = DB.getKeys()
-      .map((key) => ({ key, poll: DB.get(key) }))
-      .filter(
-        (entry) =>
-          entry.poll.channelId === msg.channelId &&
-          entry.poll.messageId === msg.id
-      );
+    const result = msg.content.match(/Poll #(.*?): /g).map((val) => val.substring(6, val.length - 1));
 
-    if (entries !== [] && entries !== undefined) {
-      const { key } = entries[0];
-      const { poll } = entries[0];
+    if (result.length === 1) {
+      try {
+        const pollId = Number(result[0]);
 
-      if (!removed) {
-        const emoji = reaction._emoji;
+        const pollResponse = await axios.get(
+          `${config.backendUrl}/poll/${pollId}`
+        );
 
-        let userReactions;
+        logAxiosResponse(pollResponse);
 
-        if (
-          poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
-          poll.reactions.includes(emoji.name)
-        ) {
-          userReactions = msg.reactions.cache.filter(
-            (react) => react.users.cache.has(user.id) && react._emoji !== emoji
-          );
-        } else {
-          userReactions = msg.reactions.cache.filter(
-            (react) => react.users.cache.has(user.id) && react._emoji === emoji
-          );
+        const poll = pollResponse.data;
+
+        if (!removed) {
+          const emoji = reaction._emoji;
+
+          let userReactions;
+
+          if (
+            poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
+            poll.reactions.includes(emoji.name)
+          ) {
+            userReactions = msg.reactions.cache.filter(
+              (react) =>
+                react.users.cache.has(user.id) && react._emoji !== emoji
+            );
+          } else {
+            userReactions = msg.reactions.cache.filter(
+              (react) =>
+                react.users.cache.has(user.id) && react._emoji === emoji
+            );
+          }
+
+          try {
+            Array.from(userReactions.values()).map(
+              async (react) => await (react as any).users.remove(user.id)
+            );
+          } catch (error) {
+            logger.error("Failed to remove reaction:", error);
+          }
         }
 
-        try {
-          Array.from(userReactions.values()).map(
-            async (react) => await (react as any).users.remove(user.id)
-          );
-        } catch (error) {
-          logger.error("Failed to remove reaction:", error);
+        const reacResults = (
+          await getReactions(poll.channelId, poll.messageId, poll.reactions)
+        ).map((react) => react.users.length);
+
+        poll.results = reacResults;
+        poll.voteCount = reacResults.reduce((a, b) => a + b);
+
+        let content = "";
+
+        for (let i = 0; i < poll.options.length; i += 1) {
+          let percentage = `${(reacResults[i] / poll.voteCount) * 100}`;
+
+          if (Number(percentage) % 1 !== 0) {
+            percentage = Number(percentage).toFixed(2);
+          }
+
+          if (percentage === "NaN") {
+            percentage = "0";
+          }
+
+          content += `\n${poll.reactions[i]} ${poll.options[i]} (${percentage}%)`;
         }
+
+        dayjs.extend(utc);
+
+        content += `\n\nPoll ends on ${dayjs
+          .unix(Number(poll.expDate))
+          .utc()
+          .format("YYYY-MM-DD HH:mm UTC")}`;
+
+        content += `\n\n${poll.voteCount} person${
+          poll.voteCount > 1 || poll.voteCount === 0 ? "s" : ""
+        } voted so far.`;
+
+        await msg.edit(
+          new MessageEmbed({
+            title: `Poll #${pollId}: ${poll.question}`,
+            color: `#${config.embedColor}`,
+            description: content,
+          })
+        );
+      } catch (e) {
+        logger.error(e);
       }
-
-      const reacResults = (
-        await getReactions(poll.channelId, poll.messageId, poll.reactions)
-      ).map((react) => react.users.length);
-
-      poll.results = reacResults;
-      poll.voteCount = reacResults.reduce((a, b) => a + b);
-
-      let content = `Poll #${DB.lastId()}:\n\n${poll.question}\n`;
-
-      for (let i = 0; i < poll.options.length; i += 1) {
-        let percentage = `${(reacResults[i] / poll.voteCount) * 100}`;
-
-        if (Number(percentage) % 1 !== 0) {
-          percentage = Number(percentage).toFixed(2);
-        }
-
-        if (percentage === "NaN") {
-          percentage = "0";
-        }
-
-        content += `\n${poll.reactions[i]} ${poll.options[i]} (${percentage}%)`;
-      }
-
-      content += `\n\n${poll.voteCount} person${
-        poll.voteCount > 1 || poll.voteCount === 0 ? "s" : ""
-      } voted so far.`;
-
-      await msg.edit(content);
-
-      DB.set(Number(key), poll);
     }
   }
 };
@@ -127,19 +147,18 @@ abstract class Events {
   @On("messageCreate")
   @Guard(NotABot, IsDM, NotACommand)
   async onPrivateMessage([message]: [Message]): Promise<void> {
-    const db = new JSONdb("polls.json");
-    const authorId = message.author.id;
-    const poll = db.get(authorId) as NewPoll;
+    const userId = message.author.id;
+    const poll = pollStorage.getPoll(userId);
 
     if (poll) {
-      switch (poll.status) {
-        case 1: {
+      switch (pollStorage.getUserStep(userId)) {
+        case 2: {
           if (poll.options.length === poll.reactions.length) {
-            poll.options.push(message.content);
+            pollStorage.savePollOption(userId, message.content);
 
             message.reply("Now send me the corresponding emoji");
           } else {
-            poll.reactions.push(message.content);
+            pollStorage.savePollReaction(userId, message.content);
 
             if (poll.options.length >= 2) {
               message.reply(
@@ -151,36 +170,46 @@ abstract class Events {
             }
           }
 
-          db.set(authorId, poll);
-          db.sync();
-
           break;
         }
 
-        case 2: {
+        case 3: {
           try {
             const duration = message.content.split(":");
 
             const expDate = dayjs()
               .add(parseInt(duration[0], 10), "day")
               .add(parseInt(duration[1], 10), "hour")
-              .add(parseInt(duration[2], 10), "minute");
+              .add(parseInt(duration[2], 10), "minute")
+              .unix();
 
-            poll.endDate = expDate.toString();
-            poll.status += 1;
-
-            db.set(authorId, poll);
-            db.sync();
+            pollStorage.savePollExpDate(userId, expDate.toString());
+            pollStorage.setUserStep(userId, 4);
 
             await message.reply("Your poll will look like this:");
 
-            let content = `${poll.question}\n`;
+            let content = "";
 
             for (let i = 0; i < poll.options.length; i += 1) {
-              content += `\n${poll.reactions[i]} ${poll.options[i]}`;
+              content += `\n${poll.reactions[i]} ${poll.options[i]} (0%)`;
             }
 
-            const msg = await message.reply(content);
+            dayjs.extend(utc);
+
+            content += `\n\nPoll ends on ${dayjs
+              .unix(Number(poll.expDate))
+              .utc()
+              .format("YYYY-MM-DD HH:mm UTC")}`;
+
+            content += "\n\n0 persons voted so far.";
+
+            const embed = new MessageEmbed({
+              title: `Poll #69: ${poll.question}`,
+              color: `#${config.embedColor}`,
+              description: content,
+            });
+
+            const msg = await message.channel.send({ embeds: [embed] });
 
             poll.reactions.map(async (emoji) => await msg.react(emoji));
 
@@ -197,11 +226,8 @@ abstract class Events {
         }
 
         default: {
-          poll.question = message.content;
-          poll.status += 1;
-
-          db.set(authorId, poll);
-          db.sync();
+          pollStorage.savePollQuestion(userId, message.content);
+          pollStorage.setUserStep(userId, 2);
 
           message.channel.send(
             "Give me the options and the corresponding emojies for the poll " +
@@ -216,7 +242,7 @@ abstract class Events {
         title: "I'm sorry, but I couldn't interpret your request.",
         color: `#ff0000`,
         description:
-          "You can find more information on [agora.xyz](https://agora.xyz) or on [guild.xyz](https://guild.xyz).",
+          "You can find more information on [docs.guild.xyz](https://docs.guild.xyz/).",
       });
 
       message.channel.send({ embeds: [embed] }).catch(logger.error);

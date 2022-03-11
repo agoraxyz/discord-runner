@@ -8,9 +8,3 @@ yarn-error.log
 .vscode
 
 yarn.lock
-
-# DC voting (for testing purposes only)
-
-testdb/
-db.json
-polls.json
