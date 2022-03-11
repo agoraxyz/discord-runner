@@ -54,7 +54,9 @@ class Main {
       ) {
         return;
       }
-      this._client.executeInteraction(interaction);
+      this._client.executeInteraction(interaction).catch((err) => {
+        logger.error(err);
+      });
     });
 
     this._client.login(config.discordToken);
