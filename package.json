@@ -15,7 +15,7 @@
     "prod": "node build/Main.js"
   },
   "dependencies": {
-    "@discordx/utilities": "^3.0.2",
+    "@discordx/utilities": "^3.4.2",
     "@types/redis": "^2.8.31",
     "axios": "^0.21.1",
     "discord.js": "^13.2.0",
