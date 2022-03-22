@@ -359,6 +359,7 @@ const listChannels = async (inviteCode: string) => {
         return {
           serverId: invite.guild.id,
           channels: [],
+          roles: [],
           isAdmin: false,
         };
       }
@@ -377,16 +378,20 @@ const listChannels = async (inviteCode: string) => {
           name: c?.name,
         }));
 
+      const roles = guild?.roles.cache.filter((r) => r.name !== "@everyone");
+
       logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
       return {
         serverId: invite.guild.id,
         channels,
+        roles,
         isAdmin: true,
       };
     } catch (error) {
       return {
         serverId: invite.guild.id,
         channels: [],
+        roles: [],
         isAdmin: null,
       };
     }
