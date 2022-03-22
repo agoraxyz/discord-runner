@@ -464,8 +464,49 @@ const getServerOwner = async (guildId: string, userId: string) => {
 
 const getUser = async (userId: string) => Main.Client.users.fetch(userId);
 
+const manageMigratedActions = async (
+  guildId: string,
+  userIds: string[],
+  roleId: string,
+  message: string
+) => {
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const role = guild.roles.cache.find((r) => r.id === roleId);
+  await Promise.all(
+    userIds.map(async (id) => {
+      const member = await guild.members.fetch(id);
+      await member.roles.add(roleId);
+      await notifyAccessedChannels(member, roleId, message);
+    })
+  );
+
+  await Promise.all(
+    role.members.map(async (m) => {
+      if (!userIds.includes(m.id)) {
+        await m.roles.remove(roleId);
+        const embed = new MessageEmbed({
+          title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements or just left it.`,
+          color: `#${config.embedColor}`,
+        });
+        try {
+          await m.send({ embeds: [embed] });
+        } catch (error) {
+          if (error?.code === 50007) {
+            logger.verbose(
+              `Cannot send messages to ${m.user.username}#${m.user.discriminator}`
+            );
+          } else {
+            logger.error(JSON.stringify(error));
+          }
+        }
+      }
+    })
+  );
+};
+
 export {
   manageRoles,
+  manageMigratedActions,
   generateInvite,
   isMember,
   removeUser,
