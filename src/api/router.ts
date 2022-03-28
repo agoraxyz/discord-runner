@@ -69,6 +69,7 @@ const createRouter = () => {
     "/role",
     validators.bodyDiscordId("serverId"),
     validators.roleNameValidator,
+    validators.isGuardValidator,
     controller.createRole
   );
 
@@ -76,6 +77,7 @@ const createRouter = () => {
     "/role",
     validators.bodyDiscordId("serverId"),
     validators.bodyDiscordId("roleId"),
+    validators.isGuardValidator,
     validators.roleNameValidator,
     controller.updateRole
   );

@@ -10,9 +10,12 @@ import {
   GuildChannel,
   Permissions,
   MessageOptions,
+  Role,
+  OverwriteResolvable,
 } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
+import Main from "../Main";
 import { getGuildsOfServer } from "../service";
 import logger from "./logger";
 
@@ -199,6 +202,57 @@ const getJoinReplyMessage = async (
   return message;
 };
 
+const setupGuildGuard = async (
+  guild: Guild,
+  verifiedRole: Role,
+  entryChannelId?: string
+) => {
+  logger.verbose(
+    `Setting up guild guard, server: ${guild.id}, verifiedRole: ${verifiedRole.id}, entryChannelId: ${entryChannelId}`
+  );
+  const editReason = `Updated by ${Main.Client.user.username} because Guide Guard has been enabled.`;
+
+  const permissionOverwrites: OverwriteResolvable[] = [
+    { type: "role", id: guild.roles.everyone.id, allow: "VIEW_CHANNEL" },
+    { type: "role", id: verifiedRole.id, deny: "VIEW_CHANNEL" },
+  ];
+
+  if (entryChannelId) {
+    const existingChannel = await guild.channels.fetch(entryChannelId);
+
+    if (existingChannel.type === "GUILD_VOICE") {
+      throw Error("Entry channel cannot be a voice channel.");
+    }
+    await existingChannel.edit({ permissionOverwrites }, editReason);
+
+    logger.verbose(
+      `Entry channel created from existing channel in ${guild.id}`
+    );
+  } else {
+    await guild.channels.create("entry-channel", {
+      permissionOverwrites,
+      reason: `Created by ${Main.Client.user.username} because Guide Guard has been enabled.`,
+    });
+
+    logger.verbose(`Entry channel created for ${guild.id}`);
+  }
+
+  await verifiedRole.edit(
+    {
+      permissions: verifiedRole.permissions.add(Permissions.FLAGS.VIEW_CHANNEL),
+    },
+    editReason
+  );
+  await guild.roles.everyone.edit(
+    {
+      permissions: guild.roles.everyone.permissions.remove(
+        Permissions.FLAGS.VIEW_CHANNEL
+      ),
+    },
+    editReason
+  );
+};
+
 export {
   getUserResult,
   getErrorResult,
@@ -208,4 +262,5 @@ export {
   createJoinInteractionPayload,
   getJoinReplyMessage,
   getAccessedChannelsByRoles,
+  setupGuildGuard,
 };

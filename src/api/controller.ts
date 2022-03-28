@@ -131,8 +131,8 @@ const controller = {
       return;
     }
 
-    const { serverId, roleName } = req.body;
-    createRole(serverId, roleName)
+    const { serverId, roleName, isGuard } = req.body;
+    createRole(serverId, roleName, isGuard)
       .then((result) => res.status(201).json(result))
       .catch((error) => {
         const errorMsg = getErrorResult(error);

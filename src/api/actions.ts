@@ -26,6 +26,7 @@ import {
   getErrorResult,
   getJoinReplyMessage,
   getUserResult,
+  setupGuildGuard,
 } from "../utils/utils";
 import config from "../config";
 import { getGuildsOfServer } from "../service";
@@ -292,18 +293,23 @@ const deleteChannelAndRole = async (
 };
 
 const createRole = async (
-  guildId: string,
-  roleName: string
+  serverId: string,
+  roleName: string,
+  isGuard: boolean
 ): Promise<CreateRoleResult> => {
-  logger.verbose(`createRole params: ${guildId}, ${roleName}`);
-  const guild = await Main.Client.guilds.fetch(guildId);
+  logger.verbose(`createRole params: ${serverId}, ${roleName}`);
+  const guild = await Main.Client.guilds.fetch(serverId);
 
   const role = await guild.roles.create({
     name: roleName,
     hoist: true,
-    reason: `Created by ${Main.Client.user.username} for an Agora Space community level.`,
+    reason: `Created by ${Main.Client.user.username} for a Guild role.`,
   });
   logger.verbose(`role created: ${role.id}`);
+
+  if (isGuard) {
+    await setupGuildGuard(guild, role);
+  }
 
   return { id: role.id };
 };
