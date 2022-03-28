@@ -41,7 +41,9 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
     const msg = reaction.message;
 
-    const result = msg.content.match(/Poll #(.*?): /g).map((val) => val.substring(6, val.length - 1));
+    const result = msg.embeds[0].title
+      .match(/Poll #(.*?): /g)
+      .map((str) => str.substring(6, str.length - 2));
 
     if (result.length === 1) {
       try {
@@ -85,16 +87,15 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
         }
 
         const reacResults = (
-          await getReactions(poll.channelId, poll.messageId, poll.reactions)
+          await getReactions(msg.channelId, msg.id, poll.reactions)
         ).map((react) => react.users.length);
 
-        poll.results = reacResults;
-        poll.voteCount = reacResults.reduce((a, b) => a + b);
+        const voteCount = reacResults.reduce((a, b) => a + b);
 
         let content = "";
 
         for (let i = 0; i < poll.options.length; i += 1) {
-          let percentage = `${(reacResults[i] / poll.voteCount) * 100}`;
+          let percentage = `${(reacResults[i] / voteCount) * 100}`;
 
           if (Number(percentage) % 1 !== 0) {
             percentage = Number(percentage).toFixed(2);
@@ -114,17 +115,13 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
           .utc()
           .format("YYYY-MM-DD HH:mm UTC")}`;
 
-        content += `\n\n${poll.voteCount} person${
-          poll.voteCount > 1 || poll.voteCount === 0 ? "s" : ""
+        content += `\n\n${voteCount} person${
+          voteCount > 1 || voteCount === 0 ? "s" : ""
         } voted so far.`;
 
-        await msg.edit(
-          new MessageEmbed({
-            title: `Poll #${pollId}: ${poll.question}`,
-            color: `#${config.embedColor}`,
-            description: content,
-          })
-        );
+        msg.embeds[0].description = content;
+
+        msg.edit({ embeds: [msg.embeds[0]] });
       } catch (e) {
         logger.error(e);
       }
@@ -225,7 +222,7 @@ abstract class Events {
           break;
         }
 
-        default: {
+        case 1: {
           pollStorage.savePollQuestion(userId, message.content);
           pollStorage.setUserStep(userId, 2);
 
@@ -234,6 +231,10 @@ abstract class Events {
               "(one after another)."
           );
 
+          break;
+        }
+
+        default: {
           break;
         }
       }

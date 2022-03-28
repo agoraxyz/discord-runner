@@ -71,18 +71,12 @@ type NewPoll = {
 
 type Poll = {
   id: number;
-  // Discord
-  channelId: string;
-  messageId: string;
-  // poll
   question: string;
+  startDate: number;
+  expDate: number;
   options: string[];
   reactions: string[];
-  expDate: string;
-  // voting
-  ended: boolean;
-  voteCount: number;
-  results: number[];
+  roleId: number;
 };
 
 type Reaction = {

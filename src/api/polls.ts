@@ -24,7 +24,9 @@ const createPoll = async (poll: NewPoll): Promise<boolean> => {
     const res = await axios.post(
       `${config.backendUrl}/poll`,
       {
-        groupId: poll.channelId,
+        platform: "DISCORD",
+        platformId: channel.guildId,
+        channelId: poll.channelId,
         question: poll.question,
         startDate: dayjs().unix(),
         expDate: poll.expDate,
