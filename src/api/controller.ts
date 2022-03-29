@@ -21,6 +21,7 @@ import {
   getServerOwner,
   getUser,
   manageMigratedActions,
+  setupGuildGuard,
 } from "./actions";
 import {
   CreateChannelParams,
@@ -131,8 +132,8 @@ const controller = {
       return;
     }
 
-    const { serverId, roleName, isGuard } = req.body;
-    createRole(serverId, roleName, isGuard)
+    const { serverId, roleName, isGuarded, entryChannelId } = req.body;
+    createRole(serverId, roleName, isGuarded, entryChannelId)
       .then((result) => res.status(201).json(result))
       .catch((error) => {
         const errorMsg = getErrorResult(error);
@@ -148,8 +149,8 @@ const controller = {
       return;
     }
 
-    const { serverId, roleId, roleName } = req.body;
-    updateRoleName(serverId, roleId, roleName)
+    const { serverId, roleId, roleName, isGuarded, entryChannelId } = req.body;
+    updateRoleName(serverId, roleId, roleName, isGuarded, entryChannelId)
       .then(() => res.status(200).send())
       .catch((error) => {
         const errorMsg = getErrorResult(error);
@@ -168,6 +169,26 @@ const controller = {
       const { guildId, roleId } = req.body;
       const deleted = await deleteRole(guildId, roleId);
       res.status(200).json(deleted);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
+  },
+
+  createGuildGuard: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      const { serverId, entryChannelId } = req.body;
+      const createdEntryChannelId = await setupGuildGuard(
+        serverId,
+        entryChannelId
+      );
+      res.status(200).json(createdEntryChannelId);
     } catch (error) {
       const errorMsg = getErrorResult(error);
       res.status(400).json(errorMsg);

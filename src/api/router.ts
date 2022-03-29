@@ -69,7 +69,8 @@ const createRouter = () => {
     "/role",
     validators.bodyDiscordId("serverId"),
     validators.roleNameValidator,
-    validators.isGuardValidator,
+    validators.isGuardedValidator,
+    validators.entryChannelIdValidator,
     controller.createRole
   );
 
@@ -77,8 +78,9 @@ const createRouter = () => {
     "/role",
     validators.bodyDiscordId("serverId"),
     validators.bodyDiscordId("roleId"),
-    validators.isGuardValidator,
     validators.roleNameValidator,
+    validators.isGuardedValidator,
+    validators.entryChannelIdValidator,
     controller.updateRole
   );
 
@@ -87,6 +89,13 @@ const createRouter = () => {
     validators.bodyDiscordId("guildId"),
     validators.bodyDiscordId("roleId"),
     controller.deleteRole
+  );
+
+  router.post(
+    "/guard",
+    validators.bodyDiscordId("serverId"),
+    validators.entryChannelIdValidator,
+    controller.createGuildGuard
   );
 
   router.get(
@@ -111,7 +120,6 @@ const createRouter = () => {
   router.post(
     "/channels/create",
     validators.bodyDiscordId("guildId"),
-    validators.bodyDiscordId("roleId"),
     validators.channelNameValidator,
     controller.createChannel
   );
