@@ -23,6 +23,14 @@ const createRouter = () => {
     controller.downgrade
   );
 
+  router.post(
+    "/manageMigratedActions",
+    validators.bodyDiscordId("guildId"),
+    validators.bodyDiscordId("roleId"),
+    validators.messageValidator,
+    controller.manageMigratedActions
+  );
+
   router.get(
     "/invite/:guildId/:inviteChannelId",
     validators.paramDiscordId("guildId"),

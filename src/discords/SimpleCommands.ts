@@ -5,24 +5,12 @@ import {
   SimpleCommandMessage,
   SimpleCommandOption,
 } from "discordx";
-import { ping } from "../commands";
-import { getGuildsOfServer, guildStatusUpdate } from "../service";
 import logger from "../utils/logger";
-import { createJoinInteractionPayload } from "../utils/utils";
+import { guildStatusUpdate } from "../service";
 
 @Discord()
 abstract class SimpleCommands {
   static commands = ["ping", "status", "join"];
-
-  @SimpleCommand("ping")
-  ping(command: SimpleCommandMessage): void {
-    logger.verbose(
-      `${command.prefix}ping command was used by ${command.message.author.username}#${command.message.author.discriminator}`
-    );
-    command.message
-      .reply(ping(command.message.createdTimestamp))
-      .catch(logger.error);
-  }
 
   @SimpleCommand("guild-status")
   async guildStatus(
@@ -44,45 +32,6 @@ abstract class SimpleCommands {
       `I'll update the whole Guild accesses as soon as possible. \nGuildID: \`${guildId}\``
     );
     await guildStatusUpdate(guildId);
-  }
-
-  @SimpleCommand("join-button")
-  async joinButton(
-    @SimpleCommandOption("message-text") messageText: string,
-    @SimpleCommandOption("button-text") buttonText: string,
-    command: SimpleCommandMessage
-  ) {
-    if (command.message.channel.type === "DM") {
-      await command.message.channel.send(
-        "❌ Use this command in a server to spawn a join button!"
-      );
-      return;
-    }
-
-    await command.message.delete();
-
-    if (command.message.guild.id === "886314998131982336") {
-      await command.message.author.send(
-        "❌ You can't use this command in the Official Guild Server!"
-      );
-      return;
-    }
-
-    const guild = await getGuildsOfServer(command.message.guild.id);
-    if (!guild) {
-      await command.message.author.send(
-        "❌ There are no guilds in this server."
-      );
-      return;
-    }
-
-    const payload = createJoinInteractionPayload(
-      guild[0],
-      messageText,
-      buttonText?.slice(0, 80)
-    );
-
-    await command.message.channel.send(payload);
   }
 }
 

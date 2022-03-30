@@ -350,8 +350,27 @@ const listChannels = async (inviteCode: string) => {
   try {
     const invite = await Main.Client.fetchInvite(inviteCode);
     logger.verbose(`${JSON.stringify(invite)}`);
+    const { icon: iconId, name: serverName } = invite.guild;
+    const serverIcon =
+      iconId === null
+        ? ""
+        : `https://cdn.discordapp.com/icons/${invite.guild.id}/${iconId}.png`;
     try {
       const guild = await Main.Client.guilds.fetch(invite.guild.id);
+      if (
+        !guild.me.permissions.has(Permissions.FLAGS.ADMINISTRATOR) &&
+        !guild.me.permissions.has(Permissions.FLAGS.MANAGE_ROLES)
+      ) {
+        return {
+          serverIcon,
+          serverName,
+          serverId: invite.guild.id,
+          channels: [],
+          roles: [],
+          isAdmin: false,
+        };
+      }
+
       logger.verbose(`${JSON.stringify(guild)}`);
       const channels = guild?.channels.cache
         .filter(
@@ -366,15 +385,25 @@ const listChannels = async (inviteCode: string) => {
           name: c?.name,
         }));
 
+      const roles = guild?.roles.cache.filter((r) => r.name !== "@everyone");
+
       logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
       return {
+        serverIcon,
+        serverName,
         serverId: invite.guild.id,
         channels,
+        roles,
+        isAdmin: true,
       };
     } catch (error) {
       return {
+        serverIcon,
+        serverName,
         serverId: invite.guild.id,
         channels: [],
+        roles: [],
+        isAdmin: null,
       };
     }
   } catch (error) {
@@ -430,22 +459,65 @@ const sendJoinButton = async (guildId: string, channelId: string) => {
   const guild = await Main.Client.guilds.fetch(guildId);
   const channel = guild.channels.cache.find((c) => c.id === channelId);
   const guilds = await getGuildsOfServer(guildId);
-  const payload = createJoinInteractionPayload(guilds[0], null, null);
+  const payload = createJoinInteractionPayload(guilds[0]);
 
-  (<TextChannel>channel).send(payload);
+  const message = await (<TextChannel>channel).send(payload);
+  await message.react(config.joinButtonEmojis.emoji1);
+  await message.react(config.joinButtonEmojis.emoji2);
 
   return true;
 };
 
 const getServerOwner = async (guildId: string, userId: string) => {
   const guild = await Main.Client.guilds.fetch(guildId);
-  return guild.ownerId === userId;
+  return guild.members.cache.get(userId)?.permissions.has("ADMINISTRATOR");
 };
 
 const getUser = async (userId: string) => Main.Client.users.fetch(userId);
 
+const manageMigratedActions = async (
+  guildId: string,
+  userIds: string[],
+  roleId: string,
+  message: string
+) => {
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const role = guild.roles.cache.find((r) => r.id === roleId);
+  await Promise.all(
+    userIds.map(async (id) => {
+      const member = await guild.members.fetch(id);
+      await member.roles.add(roleId);
+      await notifyAccessedChannels(member, roleId, message);
+    })
+  );
+
+  await Promise.all(
+    role.members.map(async (m) => {
+      if (!userIds.includes(m.id)) {
+        await m.roles.remove(roleId);
+        const embed = new MessageEmbed({
+          title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements or just left it.`,
+          color: `#${config.embedColor}`,
+        });
+        try {
+          await m.send({ embeds: [embed] });
+        } catch (error) {
+          if (error?.code === 50007) {
+            logger.verbose(
+              `Cannot send messages to ${m.user.username}#${m.user.discriminator}`
+            );
+          } else {
+            logger.error(JSON.stringify(error));
+          }
+        }
+      }
+    })
+  );
+};
+
 export {
   manageRoles,
+  manageMigratedActions,
   generateInvite,
   isMember,
   removeUser,
