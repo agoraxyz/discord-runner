@@ -428,18 +428,6 @@ const listAdministeredServers = async (userId: string) => {
   return administeredServers;
 };
 
-const getCategories = async (inviteCode: string) => {
-  const invite = await Main.Client.fetchInvite(inviteCode);
-  const guild = await Main.Client.guilds.fetch(invite.guild.id);
-  const categories = guild.channels.cache
-    .filter((c) => c.type === "GUILD_CATEGORY")
-    .map((c) => ({ id: c.id, name: c.name }));
-  return {
-    serverId: invite.guild.id,
-    categories,
-  };
-};
-
 const getGuild = async (guildId: string) => {
   if (DiscordServerNames[guildId]) {
     return DiscordServerNames[guildId];
@@ -527,7 +515,6 @@ export {
   listChannels,
   listAdministeredServers,
   createChannel,
-  getCategories,
   getGuild,
   getRole,
   deleteChannelAndRole,

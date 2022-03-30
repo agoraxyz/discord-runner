@@ -128,12 +128,6 @@ const createRouter = () => {
     controller.administeredServers
   );
 
-  router.get(
-    "/categories/:inviteCode",
-    validators.inviteCodeValidator,
-    controller.getCategories
-  );
-
   router.post(
     "/owner/",
     validators.bodyDiscordId("guildId"),
