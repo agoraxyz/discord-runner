@@ -355,7 +355,6 @@ const listChannels = async (inviteCode: string) => {
       iconId === null
         ? ""
         : `https://cdn.discordapp.com/icons/${invite.guild.id}/${iconId}.png`;
-    logger.verbose(`${JSON.stringify({ serverIcon, serverName })}`);
     try {
       const guild = await Main.Client.guilds.fetch(invite.guild.id);
       if (!guild.me.permissions.has(Permissions.FLAGS.ADMINISTRATOR)) {
