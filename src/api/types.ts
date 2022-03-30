@@ -84,6 +84,19 @@ type Reaction = {
   users: string[];
 };
 
+type Vote = {
+  platform: "DISCORD" | "TELEGRAM";
+  pollId: number;
+  platformUserId: string;
+  optionIndex: number;
+};
+
+type UserVote = {
+  tgId: string;
+  dcId: string;
+  balance: number;
+};
+
 export {
   ManageRolesParams,
   CreateChannelParams,
@@ -99,4 +112,6 @@ export {
   NewPoll,
   Poll,
   Reaction,
+  Vote,
+  UserVote,
 };

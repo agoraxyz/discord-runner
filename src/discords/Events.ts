@@ -24,8 +24,8 @@ import { userJoined, userRemoved } from "../service";
 import logger from "../utils/logger";
 import pollStorage from "../api/pollStorage";
 import config from "../config";
-import getReactions from "../api/reactions";
 import { logAxiosResponse } from "../utils/utils";
+import { UserVote, Vote } from "../api/types";
 
 const messageReactionCommon = async (reaction, user, removed: boolean) => {
   if (!user.bot) {
@@ -57,71 +57,140 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
         const poll = pollResponse.data;
 
-        if (!removed) {
+        if (dayjs().isBefore(dayjs.unix(poll.expDate))) {
           const emoji = reaction._emoji;
 
-          let userReactions;
+          if (!removed) {
+            let userReactions;
 
-          if (
-            poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
-            poll.reactions.includes(emoji.name)
-          ) {
-            userReactions = msg.reactions.cache.filter(
-              (react) =>
-                react.users.cache.has(user.id) && react._emoji !== emoji
-            );
-          } else {
-            userReactions = msg.reactions.cache.filter(
-              (react) =>
-                react.users.cache.has(user.id) && react._emoji === emoji
-            );
+            if (
+              poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
+              poll.reactions.includes(emoji.name)
+            ) {
+              const emojiName = poll.reactions.includes(emoji.name)
+                ? emoji.name
+                : `<:${emoji.name}:${emoji.id}>`;
+              const optionIndex = poll.reactions.indexOf(emojiName);
+
+              const voteResponse = await axios.post(
+                `${config.backendUrl}/poll/vote`,
+                {
+                  platform: "DISCORD",
+                  pollId,
+                  platformUserId: user.id,
+                  optionIndex,
+                } as Vote
+              );
+
+              logAxiosResponse(voteResponse);
+
+              userReactions = msg.reactions.cache.filter(
+                (react) =>
+                  react.users.cache.has(user.id) && react._emoji !== emoji
+              );
+            } else {
+              userReactions = msg.reactions.cache.filter(
+                (react) =>
+                  react.users.cache.has(user.id) && react._emoji === emoji
+              );
+            }
+
+            try {
+              Array.from(userReactions.values()).map(
+                async (react) => await (react as any).users.remove(user.id)
+              );
+            } catch (error) {
+              logger.error("Failed to remove reaction:", error);
+            }
+          } else if (
+              poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
+              poll.reactions.includes(emoji.name)
+            ) {
+              const emojiName = poll.reactions.includes(emoji.name)
+                ? emoji.name
+                : `<:${emoji.name}:${emoji.id}>`;
+              const optionIndex = poll.reactions.indexOf(emojiName);
+
+              const voteResponse = await axios.delete(
+                `${config.backendUrl}/poll/vote`,
+                {
+                  data: {
+                    platform: "DISCORD",
+                    pollId,
+                    platformUserId: user.id,
+                    optionIndex,
+                  } as Vote,
+                }
+              );
+
+              logAxiosResponse(voteResponse);
+            }
+
+          const votersResponse = await axios.get(
+            `${config.backendUrl}/poll/voters/${pollId}`
+          );
+
+          logAxiosResponse(votersResponse);
+
+          const votesByOption: {
+            [k: number]: UserVote[];
+          } = votersResponse.data;
+
+          let voteCount = 0;
+          let weightedVoteCount = 0;
+
+          for (let i = 0; i < poll.options.length; i += 1) {
+            voteCount += votesByOption[i].length;
+
+            if (votesByOption[i].length) {
+              weightedVoteCount += votesByOption[i]
+                .map((vote) => vote.balance)
+                .reduce((a, b) => a + b);
+            }
           }
 
-          try {
-            Array.from(userReactions.values()).map(
-              async (react) => await (react as any).users.remove(user.id)
-            );
-          } catch (error) {
-            logger.error("Failed to remove reaction:", error);
+          let content = "";
+
+          for (let i = 0; i < poll.options.length; i += 1) {
+            const currBal = votesByOption[i].length
+              ? votesByOption[i]
+                  .map((vote) => vote.balance)
+                  .reduce((a, b) => a + b)
+              : 0;
+
+            let percentage = `${(currBal / weightedVoteCount) * 100}`;
+
+            if (Number(percentage) % 1 !== 0) {
+              percentage = Number(percentage).toFixed(2);
+            }
+
+            if (percentage === "NaN") {
+              percentage = "0";
+            }
+
+            content +=
+              `\n${poll.reactions[i]} ` +
+              `${poll.options[i]} ` +
+              `(${percentage}%)`;
           }
+
+          dayjs.extend(utc);
+
+          content += `\n\nPoll ends on ${dayjs
+            .unix(Number(poll.expDate))
+            .utc()
+            .format("YYYY-MM-DD HH:mm UTC")}`;
+
+          content += `\n\n${voteCount} person${
+            voteCount > 1 || voteCount === 0 ? "s" : ""
+          } voted so far.`;
+
+          msg.embeds[0].description = content;
+
+          msg.edit({ embeds: [msg.embeds[0]] });
+        } else {
+          logger.warn(`Poll #${pollId} has already expired.`);
         }
-
-        const reacResults = (
-          await getReactions(msg.channelId, msg.id, poll.reactions)
-        ).map((react) => react.users.length);
-
-        const voteCount = reacResults.reduce((a, b) => a + b);
-
-        let content = "";
-
-        for (let i = 0; i < poll.options.length; i += 1) {
-          let percentage = `${(reacResults[i] / voteCount) * 100}`;
-
-          if (Number(percentage) % 1 !== 0) {
-            percentage = Number(percentage).toFixed(2);
-          }
-
-          if (percentage === "NaN") {
-            percentage = "0";
-          }
-
-          content += `\n${poll.reactions[i]} ${poll.options[i]} (${percentage}%)`;
-        }
-
-        dayjs.extend(utc);
-
-        content += `\n\nPoll ends on ${dayjs
-          .unix(Number(poll.expDate))
-          .utc()
-          .format("YYYY-MM-DD HH:mm UTC")}`;
-
-        content += `\n\n${voteCount} person${
-          voteCount > 1 || voteCount === 0 ? "s" : ""
-        } voted so far.`;
-
-        msg.embeds[0].description = content;
-
-        msg.edit({ embeds: [msg.embeds[0]] });
       } catch (e) {
         logger.error(e);
       }
@@ -151,21 +220,29 @@ abstract class Events {
       switch (pollStorage.getUserStep(userId)) {
         case 2: {
           if (poll.options.length === poll.reactions.length) {
-            pollStorage.savePollOption(userId, message.content);
+            if (!poll.options.includes(message.content)) {
+              pollStorage.savePollOption(userId, message.content);
 
-            message.reply("Now send me the corresponding emoji");
-          } else {
-            pollStorage.savePollReaction(userId, message.content);
-
-            if (poll.options.length >= 2) {
-              message.reply(
-                "Give me a new option or go to the nex step by using " +
-                  "**/enough**"
-              );
+              message.reply("Now send me the corresponding emoji");
             } else {
-              message.reply("Give me the next option");
+              message.reply("This option has already been added");
             }
-          }
+          } else if (!poll.reactions.includes(message.content)) {
+              pollStorage.savePollReaction(userId, message.content);
+
+              if (poll.options.length >= 2) {
+                message.reply(
+                  "Give me a new option or go to the nex step by using " +
+                    "**/enough**"
+                );
+              } else {
+                message.reply("Give me the next option");
+              }
+            } else {
+              message.reply(
+                "This emoji has already been used, choose another one"
+              );
+            }
 
           break;
         }
