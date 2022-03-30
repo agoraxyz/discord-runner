@@ -459,7 +459,7 @@ const sendJoinButton = async (guildId: string, channelId: string) => {
 
 const getServerOwner = async (guildId: string, userId: string) => {
   const guild = await Main.Client.guilds.fetch(guildId);
-  return guild.ownerId === userId;
+  return guild.members.cache.get(userId)?.permissions.has("ADMINISTRATOR");
 };
 
 const getUser = async (userId: string) => Main.Client.users.fetch(userId);
