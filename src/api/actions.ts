@@ -350,6 +350,11 @@ const listChannels = async (inviteCode: string) => {
   try {
     const invite = await Main.Client.fetchInvite(inviteCode);
     logger.verbose(`${JSON.stringify(invite)}`);
+    const { icon: iconId, name: serverName } = invite.guild;
+    const serverIcon =
+      iconId === null
+        ? ""
+        : `https://cdn.discordapp.com/icons/${invite.guild.id}/${iconId}.png`;
     try {
       const guild = await Main.Client.guilds.fetch(invite.guild.id);
       if (
@@ -357,6 +362,8 @@ const listChannels = async (inviteCode: string) => {
         !guild.me.permissions.has(Permissions.FLAGS.MANAGE_ROLES)
       ) {
         return {
+          serverIcon,
+          serverName,
           serverId: invite.guild.id,
           channels: [],
           roles: [],
@@ -382,6 +389,8 @@ const listChannels = async (inviteCode: string) => {
 
       logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
       return {
+        serverIcon,
+        serverName,
         serverId: invite.guild.id,
         channels,
         roles,
@@ -389,6 +398,8 @@ const listChannels = async (inviteCode: string) => {
       };
     } catch (error) {
       return {
+        serverIcon,
+        serverName,
         serverId: invite.guild.id,
         channels: [],
         roles: [],
