@@ -28,12 +28,10 @@ services:
     env_file:
       - redis.env
     networks:
-      - runner-discord
+      #      - redis-discord
       - redis-discord-outer
     volumes:
       - redis-persistence:/bitnami/redis/data
-    ports:
-      - 6380:6380
 
 networks:
   #  redis-discord:
