@@ -198,8 +198,8 @@ const controller = {
       return;
     }
 
-    const { inviteCode } = req.params;
-    listChannels(inviteCode)
+    const { guildId } = req.params;
+    listChannels(guildId)
       .then((result) => res.status(200).json(result))
       .catch((error) => {
         const errorMsg = getErrorResult(error);
