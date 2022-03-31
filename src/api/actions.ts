@@ -224,6 +224,9 @@ const createChannel = async (params: CreateChannelParams) => {
 
   const createdChannel = await guild.channels.create(channelName, {
     type: "GUILD_TEXT",
+    permissionOverwrites: [
+      { type: "role", id: guild.roles.everyone.id, deny: "SEND_MESSAGES" },
+    ],
   });
 
   return createdChannel;
@@ -275,6 +278,7 @@ const createRole = async (
     name: roleName,
     hoist: true,
     reason: `Created by ${Main.Client.user.username} for a Guild role.`,
+    permissions: Permissions.FLAGS.VIEW_CHANNEL,
   });
   logger.verbose(`role created: ${role.id}`);
 
@@ -302,6 +306,7 @@ const updateRoleName = async (
   const updatedRole = await role.edit(
     {
       name: newRoleName,
+      permissions: isGuarded ? role.permissions.add("VIEW_CHANNEL") : undefined,
     },
     `Updated by ${Main.Client.user.username} because the role name has changed in Guild.`
   );
@@ -499,6 +504,10 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
   const editReason = `Updated by ${Main.Client.user.username} because Guide Guard has been enabled.`;
   let createdEntryChannelId: string;
 
+  const rolesExceptEveryone = guild.roles.cache.filter(
+    (r) => r.id !== guild.roles.everyone.id && r.editable
+  );
+
   // check if enrty channel id was provided
   if (entryChannelId) {
     // check if the provided entry channel is valid
@@ -522,24 +531,23 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
     ) {
       existingChannel.permissionOverwrites.create(guild.roles.everyone, {
         VIEW_CHANNEL: true,
+        SEND_MESSAGES: false,
       });
     }
 
     Promise.all(
-      guild.roles.cache
-        .filter((r) => r.id !== guild.roles.everyone.id)
-        .map(async (r) => {
-          if (
-            !existingChannel.permissionOverwrites.cache
-              .get(r.id)
-              ?.deny.has(Permissions.FLAGS.VIEW_CHANNEL)
-          )
-            await existingChannel.permissionOverwrites.create(
-              r,
-              { VIEW_CHANNEL: false },
-              { reason: editReason }
-            );
-        })
+      rolesExceptEveryone.map(async (r) => {
+        if (
+          !existingChannel.permissionOverwrites.cache
+            .get(r.id)
+            ?.deny.has(Permissions.FLAGS.VIEW_CHANNEL)
+        )
+          await existingChannel.permissionOverwrites.create(
+            r,
+            { VIEW_CHANNEL: false },
+            { reason: editReason }
+          );
+      })
     );
 
     logger.verbose(
@@ -549,14 +557,17 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
     // create entry channel with the proper permission overwrited
     const createdEntryChannel = await guild.channels.create("entry-channel", {
       permissionOverwrites: [
-        { type: "role", id: guild.roles.everyone.id, allow: "VIEW_CHANNEL" },
-        ...guild.roles.cache
-          .filter((r) => r.id !== guild.roles.everyone.id)
-          .map<OverwriteResolvable>((r) => ({
-            type: "role",
-            id: r.id,
-            deny: "VIEW_CHANNEL",
-          })),
+        {
+          type: "role",
+          id: guild.roles.everyone.id,
+          allow: "VIEW_CHANNEL",
+          deny: "SEND_MESSAGES",
+        },
+        ...rolesExceptEveryone.map<OverwriteResolvable>((r) => ({
+          type: "role",
+          id: r.id,
+          deny: "VIEW_CHANNEL",
+        })),
       ],
       reason: `Created by ${Main.Client.user.username} because Guide Guard has been enabled.`,
     });
@@ -564,6 +575,12 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
 
     logger.verbose(`Entry channel created for ${guild.id}`);
   }
+
+  await Promise.all(
+    rolesExceptEveryone.map(async (r) => {
+      await r.edit({ permissions: r.permissions.add("VIEW_CHANNEL") });
+    })
+  );
 
   // make sure the @everyone role has no view channel permission
   await guild.roles.everyone.edit(
