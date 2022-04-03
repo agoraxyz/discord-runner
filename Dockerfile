@@ -9,7 +9,7 @@ COPY ./src ./src
 
 RUN npm ci --quiet && npm run build
 
-FROM node:17.1.0-alpine3.14 AS app
+FROM node:alpine3.14 AS app
 
 ENV NODE_ENV=production
 ENV TZ=Europe/Budapest
