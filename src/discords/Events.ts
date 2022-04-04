@@ -82,24 +82,29 @@ abstract class Events {
   @On("roleCreate")
   async onRoleCreate([role]: [Role]): Promise<void> {
     const guildOfServer = await getGuildsOfServer(role.guild.id);
-    const entryChannel = await role.guild.channels.fetch(
-      guildOfServer[0].inviteChannel
-    );
 
-    await role.edit({ permissions: role.permissions.add("VIEW_CHANNEL") });
-
-    if (
-      !entryChannel.permissionOverwrites.cache
-        .get(role.id)
-        ?.deny.has(Permissions.FLAGS.VIEW_CHANNEL)
-    )
-      await entryChannel.permissionOverwrites.create(
-        role,
-        { VIEW_CHANNEL: false, SEND_MESSAGES: false },
-        {
-          reason: `Role edited by ${Main.Client.user.username} because Guild Guard is enabled.`,
-        }
+    try {
+      const entryChannel = await role.guild.channels.fetch(
+        guildOfServer[0].inviteChannel
       );
+
+      await role.edit({ permissions: role.permissions.add("VIEW_CHANNEL") });
+
+      if (
+        !entryChannel.permissionOverwrites?.cache
+          .get(role.id)
+          ?.deny.has(Permissions.FLAGS.VIEW_CHANNEL)
+      )
+        await entryChannel.permissionOverwrites?.create(
+          role,
+          { VIEW_CHANNEL: false, SEND_MESSAGES: false },
+          {
+            reason: `Role edited by ${Main.Client.user.username} because Guild Guard is enabled.`,
+          }
+        );
+    } catch (error) {
+      logger.verbose(`No entry channel for guild: ${guildOfServer[0].id}`);
+    }
   }
 }
 

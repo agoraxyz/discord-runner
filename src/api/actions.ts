@@ -6,7 +6,6 @@ import {
   GuildChannel,
   MessageEmbed,
   Channel,
-  TextChannel,
   ThreadChannel,
   OverwriteResolvable,
 } from "discord.js";
@@ -372,7 +371,15 @@ const listChannels = async (guildId: string) => {
         name: c?.name,
       }));
 
-    const roles = guild?.roles.cache.filter((r) => r.name !== "@everyone");
+    const roles = guild?.roles.cache.filter(
+      (r) => r.id !== guild.roles.everyone.id
+    );
+
+    const membersWithoutRole = guild.members.cache.reduce(
+      (acc, m) =>
+        m.roles.highest.id === guild.roles.everyone.id ? acc + 1 : acc,
+      0
+    );
 
     logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
     return {
@@ -382,6 +389,7 @@ const listChannels = async (guildId: string) => {
       channels,
       roles,
       isAdmin: true,
+      membersWithoutRole,
     };
   } catch (error) {
     return {
@@ -391,6 +399,7 @@ const listChannels = async (guildId: string) => {
       channels: [],
       roles: [],
       isAdmin: null,
+      membersWithoutRole: null,
     };
   }
 };
@@ -426,10 +435,15 @@ const getRole = async (guildId: string, roleId: string) => {
 const sendJoinButton = async (guildId: string, channelId: string) => {
   const guild = await Main.Client.guilds.fetch(guildId);
   const channel = guild.channels.cache.find((c) => c.id === channelId);
+
+  if (!channel?.isText()) {
+    return false;
+  }
+
   const guilds = await getGuildsOfServer(guildId);
   const payload = createJoinInteractionPayload(guilds[0]);
 
-  const message = await (<TextChannel>channel).send(payload);
+  const message = await channel.send(payload);
   await message.react(config.joinButtonEmojis.emoji1);
   await message.react(config.joinButtonEmojis.emoji2);
 
@@ -503,6 +517,12 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
     const existingChannel = guild.channels.cache.find(
       (c) => c.id === entryChannelId
     );
+
+    if (!existingChannel) {
+      throw new Error(
+        `Channel with id ${entryChannelId} does not exists in server ${guildId}.`
+      );
+    }
 
     if (existingChannel instanceof ThreadChannel) {
       throw Error("Entry channel cannot be a thread.");
