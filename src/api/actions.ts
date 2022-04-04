@@ -504,7 +504,7 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
 
   const guild = await Main.Client.guilds.fetch(guildId);
 
-  const editReason = `Updated by ${Main.Client.user.username} because Guide Guard has been enabled.`;
+  const editReason = `Updated by ${Main.Client.user.username} because Guild Guard has been enabled.`;
   let createdEntryChannelId: string;
 
   const rolesExceptEveryone = guild.roles.cache.filter(
@@ -578,7 +578,7 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
           deny: "VIEW_CHANNEL",
         })),
       ],
-      reason: `Created by ${Main.Client.user.username} because Guide Guard has been enabled.`,
+      reason: `Created by ${Main.Client.user.username} because Guild Guard has been enabled.`,
     });
     createdEntryChannelId = createdEntryChannel.id;
 
