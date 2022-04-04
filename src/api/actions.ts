@@ -512,7 +512,7 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
   );
 
   // check if enrty channel id was provided
-  if (entryChannelId) {
+  if (entryChannelId && entryChannelId !== "0") {
     // check if the provided entry channel is valid
     const existingChannel = guild.channels.cache.find(
       (c) => c.id === entryChannelId
