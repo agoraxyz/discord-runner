@@ -26,4 +26,8 @@ export default {
     .isLength({ min: 1 }),
   categoryNameValidator: body("categoryName").isString().trim().optional(),
   isGuildValidator: body("isGuild").trim().isBoolean(),
+  isGuardedValidator: body("isGuarded").optional().isBoolean(),
+  entryChannelIdValidator: body("entryChannelId")
+    .optional()
+    .isLength({ min: 1 }),
 };

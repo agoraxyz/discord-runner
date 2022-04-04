@@ -6,14 +6,14 @@ import {
   GuildChannel,
   MessageEmbed,
   Channel,
-  TextChannel,
+  ThreadChannel,
+  OverwriteResolvable,
 } from "discord.js";
 import axios from "axios";
 import Main from "../Main";
 import logger from "../utils/logger";
 import {
   CreateChannelParams,
-  CreateRoleResult,
   DeleteChannelAndRoleParams,
   InviteResult,
   ManageRolesParams,
@@ -21,6 +21,7 @@ import {
 } from "./types";
 import {
   createJoinInteractionPayload,
+  denyViewEntryChannelForRole,
   getAccessedChannelsByRoles,
   getErrorResult,
   getJoinReplyMessage,
@@ -216,44 +217,16 @@ const removeUser = async (guildId: string, userId: string): Promise<void> => {
 
 const createChannel = async (params: CreateChannelParams) => {
   logger.verbose(`createChannel params: ${JSON.stringify(params)}`);
-  const { guildId, roleId, channelName } = params;
+  const { guildId, channelName } = params;
   const guild = await Main.Client.guilds.fetch(guildId);
-
-  const everyone = guild.roles.cache.find((r) => r.name === "@everyone");
-  logger.verbose(`createChannel params: ${JSON.stringify(everyone)}`);
 
   const createdChannel = await guild.channels.create(channelName, {
     type: "GUILD_TEXT",
+    permissionOverwrites: [
+      { type: "role", id: guild.roles.everyone.id, deny: "SEND_MESSAGES" },
+    ],
   });
-  const category = guild.channels.cache.find(
-    (c) => c.name.toUpperCase() === "GUILDS-3" && c.type === "GUILD_CATEGORY"
-  );
 
-  await (
-    guild.channels.cache.find(
-      (c) => c.name === createdChannel.name && !c.isThread()
-    ) as GuildChannel
-  ).setParent(category.id);
-
-  createdChannel.permissionOverwrites.set([
-    {
-      id: everyone.id,
-      deny: Permissions.FLAGS.VIEW_CHANNEL,
-    },
-    {
-      id: roleId,
-      allow: [
-        Permissions.FLAGS.ADD_REACTIONS,
-        Permissions.FLAGS.ATTACH_FILES,
-        Permissions.FLAGS.EMBED_LINKS,
-        Permissions.FLAGS.READ_MESSAGE_HISTORY,
-        Permissions.FLAGS.SEND_MESSAGES,
-        Permissions.FLAGS.USE_EXTERNAL_EMOJIS,
-        Permissions.FLAGS.VIEW_CHANNEL,
-      ],
-      deny: [Permissions.FLAGS.CREATE_INSTANT_INVITE],
-    },
-  ]);
   return createdChannel;
 };
 
@@ -291,38 +264,54 @@ const deleteChannelAndRole = async (
 };
 
 const createRole = async (
-  guildId: string,
-  roleName: string
-): Promise<CreateRoleResult> => {
-  logger.verbose(`createRole params: ${guildId}, ${roleName}`);
-  const guild = await Main.Client.guilds.fetch(guildId);
+  serverId: string,
+  roleName: string,
+  isGuard: boolean,
+  entryChannelId?: string
+) => {
+  logger.verbose(`createRole params: ${serverId}, ${roleName}`);
+  const guild = await Main.Client.guilds.fetch(serverId);
 
   const role = await guild.roles.create({
     name: roleName,
     hoist: true,
-    reason: `Created by ${Main.Client.user.username} for an Agora Space community level.`,
+    reason: `Created by ${Main.Client.user.username} for a Guild role.`,
+    permissions: Permissions.FLAGS.VIEW_CHANNEL,
   });
   logger.verbose(`role created: ${role.id}`);
 
-  return { id: role.id };
+  if (isGuard) {
+    await denyViewEntryChannelForRole(role, entryChannelId);
+  }
+
+  return role.id;
 };
 
 const updateRoleName = async (
-  guildId: string,
+  serverId: string,
   roleId: string,
-  newRoleName: string
+  newRoleName: string,
+  isGuarded: boolean,
+  entryChannelId?: string
 ) => {
   logger.verbose(
-    `updateRoleName params: ${guildId}, ${roleId}, ${newRoleName}`
+    `updateRoleName params: ${serverId}, ${roleId}, ${newRoleName}`
   );
-  const guild = await Main.Client.guilds.fetch(guildId);
+  const guild = await Main.Client.guilds.fetch(serverId);
 
   const role = await guild.roles.fetch(roleId);
 
   const updatedRole = await role.edit(
-    { name: newRoleName },
+    {
+      name: newRoleName,
+      permissions: isGuarded ? role.permissions.add("VIEW_CHANNEL") : undefined,
+    },
     `Updated by ${Main.Client.user.username} because the role name has changed in Guild.`
   );
+
+  if (isGuarded) {
+    denyViewEntryChannelForRole(role, entryChannelId);
+  }
 
   return updatedRole;
 };
@@ -382,7 +371,15 @@ const listChannels = async (guildId: string) => {
         name: c?.name,
       }));
 
-    const roles = guild?.roles.cache.filter((r) => r.name !== "@everyone");
+    const roles = guild?.roles.cache.filter(
+      (r) => r.id !== guild.roles.everyone.id
+    );
+
+    const membersWithoutRole = guild.members.cache.reduce(
+      (acc, m) =>
+        m.roles.highest.id === guild.roles.everyone.id ? acc + 1 : acc,
+      0
+    );
 
     logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
     return {
@@ -392,6 +389,7 @@ const listChannels = async (guildId: string) => {
       channels,
       roles,
       isAdmin: true,
+      membersWithoutRole,
     };
   } catch (error) {
     return {
@@ -401,6 +399,7 @@ const listChannels = async (guildId: string) => {
       channels: [],
       roles: [],
       isAdmin: null,
+      membersWithoutRole: null,
     };
   }
 };
@@ -436,10 +435,15 @@ const getRole = async (guildId: string, roleId: string) => {
 const sendJoinButton = async (guildId: string, channelId: string) => {
   const guild = await Main.Client.guilds.fetch(guildId);
   const channel = guild.channels.cache.find((c) => c.id === channelId);
+
+  if (!channel?.isText()) {
+    return false;
+  }
+
   const guilds = await getGuildsOfServer(guildId);
   const payload = createJoinInteractionPayload(guilds[0]);
 
-  const message = await (<TextChannel>channel).send(payload);
+  const message = await channel.send(payload);
   await message.react(config.joinButtonEmojis.emoji1);
   await message.react(config.joinButtonEmojis.emoji2);
 
@@ -493,6 +497,113 @@ const manageMigratedActions = async (
   );
 };
 
+const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
+  logger.verbose(
+    `Setting up guild guard, server: ${guildId}, entryChannelId: ${entryChannelId}`
+  );
+
+  const guild = await Main.Client.guilds.fetch(guildId);
+
+  const editReason = `Updated by ${Main.Client.user.username} because Guild Guard has been enabled.`;
+  let createdEntryChannelId: string;
+
+  const rolesExceptEveryone = guild.roles.cache.filter(
+    (r) => r.id !== guild.roles.everyone.id && r.editable
+  );
+
+  // check if enrty channel id was provided
+  if (entryChannelId) {
+    // check if the provided entry channel is valid
+    const existingChannel = guild.channels.cache.find(
+      (c) => c.id === entryChannelId
+    );
+
+    if (!existingChannel) {
+      throw new Error(
+        `Channel with id ${entryChannelId} does not exists in server ${guildId}.`
+      );
+    }
+
+    if (existingChannel instanceof ThreadChannel) {
+      throw Error("Entry channel cannot be a thread.");
+    }
+
+    if (existingChannel.type === "GUILD_VOICE") {
+      throw Error("Entry channel cannot be a voice channel.");
+    }
+
+    // check if read permission is allowed for everyone in the enrty channel
+    if (
+      !existingChannel.permissionOverwrites.cache
+        .get(guild.roles.everyone.id)
+        ?.allow.has(Permissions.FLAGS.VIEW_CHANNEL)
+    ) {
+      existingChannel.permissionOverwrites.create(guild.roles.everyone, {
+        VIEW_CHANNEL: true,
+        SEND_MESSAGES: false,
+      });
+    }
+
+    Promise.all(
+      rolesExceptEveryone.map(async (r) => {
+        if (
+          !existingChannel.permissionOverwrites.cache
+            .get(r.id)
+            ?.deny.has(Permissions.FLAGS.VIEW_CHANNEL)
+        )
+          await existingChannel.permissionOverwrites.create(
+            r,
+            { VIEW_CHANNEL: false },
+            { reason: editReason }
+          );
+      })
+    );
+
+    logger.verbose(
+      `Entry channel created from existing channel in ${guild.id}`
+    );
+  } else {
+    // create entry channel with the proper permission overwrited
+    const createdEntryChannel = await guild.channels.create("entry-channel", {
+      permissionOverwrites: [
+        {
+          type: "role",
+          id: guild.roles.everyone.id,
+          allow: "VIEW_CHANNEL",
+          deny: "SEND_MESSAGES",
+        },
+        ...rolesExceptEveryone.map<OverwriteResolvable>((r) => ({
+          type: "role",
+          id: r.id,
+          deny: "VIEW_CHANNEL",
+        })),
+      ],
+      reason: `Created by ${Main.Client.user.username} because Guild Guard has been enabled.`,
+    });
+    createdEntryChannelId = createdEntryChannel.id;
+
+    logger.verbose(`Entry channel created for ${guild.id}`);
+  }
+
+  await Promise.all(
+    rolesExceptEveryone.map(async (r) => {
+      await r.edit({ permissions: r.permissions.add("VIEW_CHANNEL") });
+    })
+  );
+
+  // make sure the @everyone role has no view channel permission
+  await guild.roles.everyone.edit(
+    {
+      permissions: guild.roles.everyone.permissions.remove(
+        Permissions.FLAGS.VIEW_CHANNEL
+      ),
+    },
+    editReason
+  );
+
+  return createdEntryChannelId;
+};
+
 export {
   manageRoles,
   manageMigratedActions,
@@ -512,4 +623,5 @@ export {
   sendJoinButton,
   getServerOwner,
   getUser,
+  setupGuildGuard,
 };

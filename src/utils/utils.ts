@@ -10,6 +10,7 @@ import {
   GuildChannel,
   Permissions,
   MessageOptions,
+  Role,
 } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
@@ -199,6 +200,31 @@ const getJoinReplyMessage = async (
   return message;
 };
 
+const denyViewEntryChannelForRole = async (
+  role: Role,
+  entryChannelId: string
+) => {
+  try {
+    const entryChannel = role.guild.channels.cache.get(
+      entryChannelId
+    ) as GuildChannel;
+    if (
+      !entryChannel.permissionOverwrites.cache
+        .get(role.id)
+        ?.deny.has(Permissions.FLAGS.VIEW_CHANNEL)
+    ) {
+      await entryChannel.permissionOverwrites.create(role.id, {
+        VIEW_CHANNEL: false,
+      });
+    }
+  } catch (error) {
+    logger.warn(error);
+    throw new Error(
+      `Entry channel does not exists. (server: ${role.guild.id}, channel: ${entryChannelId})`
+    );
+  }
+};
+
 export {
   getUserResult,
   getErrorResult,
@@ -208,4 +234,5 @@ export {
   createJoinInteractionPayload,
   getJoinReplyMessage,
   getAccessedChannelsByRoles,
+  denyViewEntryChannelForRole,
 };
