@@ -5,14 +5,16 @@ import {
   Message,
   MessageEmbed,
   PartialGuildMember,
+  Permissions,
   RateLimitData,
+  Role,
 } from "discord.js";
 import { Discord, Guard, On } from "discordx";
 import IsDM from "../guards/IsDM";
 import NotABot from "../guards/NotABot";
 import NotACommand from "../guards/NotACommand";
 import Main from "../Main";
-import { userJoined, userRemoved } from "../service";
+import { getGuildsOfServer, userJoined, userRemoved } from "../service";
 import logger from "../utils/logger";
 
 @Discord()
@@ -75,6 +77,29 @@ abstract class Events {
           });
       }
     });
+  }
+
+  @On("roleCreate")
+  async onRoleCreate([role]: [Role]): Promise<void> {
+    const guildOfServer = await getGuildsOfServer(role.guild.id);
+    const entryChannel = await role.guild.channels.fetch(
+      guildOfServer[0].inviteChannel
+    );
+
+    await role.edit({ permissions: role.permissions.add("VIEW_CHANNEL") });
+
+    if (
+      !entryChannel.permissionOverwrites.cache
+        .get(role.id)
+        ?.deny.has(Permissions.FLAGS.VIEW_CHANNEL)
+    )
+      await entryChannel.permissionOverwrites.create(
+        role,
+        { VIEW_CHANNEL: false, SEND_MESSAGES: false },
+        {
+          reason: `Role edited by ${Main.Client.user.username} because Guild Guard is enabled.`,
+        }
+      );
   }
 }
 
