@@ -9,7 +9,7 @@ const getIdValidatorForBody = (fieldName: string) =>
 export default {
   paramDiscordId: getIdValidatorForParam,
   bodyDiscordId: getIdValidatorForBody,
-  roleIdsArrayValidator: body("roleIds").isArray({ min: 1 }),
+  roleIdsArrayValidator: body("roleIds").optional().isArray({ min: 1 }),
   messageValidator: body("message").isString().trim().isLength({ min: 1 }),
   roleNameValidator: body("roleName").isString().trim().isLength({ min: 1 }),
   oldRoleNameValidator: body("oldRoleName")

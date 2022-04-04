@@ -8,6 +8,7 @@ import {
   Channel,
   ThreadChannel,
   OverwriteResolvable,
+  Collection,
 } from "discord.js";
 import axios from "axios";
 import Main from "../Main";
@@ -497,7 +498,11 @@ const manageMigratedActions = async (
   );
 };
 
-const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
+const setupGuildGuard = async (
+  guildId: string,
+  entryChannelId?: string,
+  roleIds?: string[]
+) => {
   logger.verbose(
     `Setting up guild guard, server: ${guildId}, entryChannelId: ${entryChannelId}`
   );
@@ -507,9 +512,16 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
   const editReason = `Updated by ${Main.Client.user.username} because Guild Guard has been enabled.`;
   let createdEntryChannelId: string;
 
-  const rolesExceptEveryone = guild.roles.cache.filter(
+  const editableRolesExceptEveryone = guild.roles.cache.filter(
     (r) => r.id !== guild.roles.everyone.id && r.editable
   );
+
+  let verifiedRoles: Collection<string, Role>;
+  if (roleIds) {
+    verifiedRoles = guild.roles.cache.filter((r) => roleIds.includes(r.id));
+  } else {
+    verifiedRoles = editableRolesExceptEveryone;
+  }
 
   // check if enrty channel id was provided
   if (entryChannelId && entryChannelId !== "0") {
@@ -545,7 +557,7 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
     }
 
     Promise.all(
-      rolesExceptEveryone.map(async (r) => {
+      verifiedRoles.map(async (r) => {
         if (
           !existingChannel.permissionOverwrites.cache
             .get(r.id)
@@ -572,7 +584,7 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
           allow: "VIEW_CHANNEL",
           deny: "SEND_MESSAGES",
         },
-        ...rolesExceptEveryone.map<OverwriteResolvable>((r) => ({
+        ...verifiedRoles.map<OverwriteResolvable>((r) => ({
           type: "role",
           id: r.id,
           deny: "VIEW_CHANNEL",
@@ -586,10 +598,18 @@ const setupGuildGuard = async (guildId: string, entryChannelId?: string) => {
   }
 
   await Promise.all(
-    rolesExceptEveryone.map(async (r) => {
+    verifiedRoles.map(async (r) => {
       await r.edit({ permissions: r.permissions.add("VIEW_CHANNEL") });
     })
   );
+
+  if (roleIds) {
+    await Promise.all(
+      editableRolesExceptEveryone.difference(verifiedRoles).map(async (r) => {
+        await r.edit({ permissions: r.permissions.remove("VIEW_CHANNEL") });
+      })
+    );
+  }
 
   // make sure the @everyone role has no view channel permission
   await guild.roles.everyone.edit(
