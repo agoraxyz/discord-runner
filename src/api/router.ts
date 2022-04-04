@@ -105,8 +105,8 @@ const createRouter = () => {
   );
 
   router.get(
-    "/channels/:inviteCode",
-    validators.inviteCodeValidator,
+    "/channels/:guildId",
+    validators.paramDiscordId("guildId"),
     controller.channels
   );
 
@@ -136,12 +136,6 @@ const createRouter = () => {
     "/administeredServers/:platformUserId",
     validators.paramDiscordId("platformUserId"),
     controller.administeredServers
-  );
-
-  router.get(
-    "/categories/:inviteCode",
-    validators.inviteCodeValidator,
-    controller.getCategories
   );
 
   router.post(

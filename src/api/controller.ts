@@ -6,7 +6,6 @@ import {
   createRole,
   deleteChannelAndRole,
   generateInvite,
-  getCategories,
   getGuild,
   getRole,
   isIn,
@@ -220,8 +219,8 @@ const controller = {
       return;
     }
 
-    const { inviteCode } = req.params;
-    listChannels(inviteCode)
+    const { guildId } = req.params;
+    listChannels(guildId)
       .then((result) => res.status(200).json(result))
       .catch((error) => {
         const errorMsg = getErrorResult(error);
@@ -274,24 +273,6 @@ const controller = {
       const params: DeleteChannelAndRoleParams = req.body;
       const deleted = await deleteChannelAndRole(params);
       res.status(200).json(deleted);
-    } catch (error) {
-      const errorMsg = getErrorResult(error);
-      res.status(400).json(errorMsg);
-    }
-  },
-
-  getCategories: async (req: Request, res: Response): Promise<void> => {
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-    try {
-      const { inviteCode } = req.params;
-      const categories = await getCategories(inviteCode);
-
-      res.status(200).json(categories);
     } catch (error) {
       const errorMsg = getErrorResult(error);
       res.status(400).json(errorMsg);
