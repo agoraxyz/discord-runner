@@ -83,6 +83,10 @@ abstract class Events {
   async onRoleCreate([role]: [Role]): Promise<void> {
     const guildOfServer = await getGuildsOfServer(role.guild.id);
 
+    if (!guildOfServer[0]?.isGuarded) {
+      return;
+    }
+
     try {
       const entryChannel = await role.guild.channels.fetch(
         guildOfServer[0].inviteChannel

@@ -204,9 +204,8 @@ const denyViewEntryChannelForRole = async (
   role: Role,
   entryChannelId: string
 ) => {
-  let entryChannel: GuildChannel;
   try {
-    entryChannel = role.guild.channels.cache.get(
+    const entryChannel = role.guild.channels.cache.get(
       entryChannelId
     ) as GuildChannel;
     if (
