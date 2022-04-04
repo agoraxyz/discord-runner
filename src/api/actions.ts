@@ -12,7 +12,6 @@ import axios from "axios";
 import Main from "../Main";
 import logger from "../utils/logger";
 import {
-  ActionError,
   CreateChannelParams,
   CreateRoleResult,
   DeleteChannelAndRoleParams,
@@ -220,8 +219,7 @@ const createChannel = async (params: CreateChannelParams) => {
   const { guildId, roleId, channelName } = params;
   const guild = await Main.Client.guilds.fetch(guildId);
 
-  const everyone = guild.roles.cache.find((r) => r.name === "@everyone");
-  logger.verbose(`createChannel params: ${JSON.stringify(everyone)}`);
+  logger.verbose(`createChannel params: ${JSON.stringify(params)}`);
 
   const createdChannel = await guild.channels.create(channelName, {
     type: "GUILD_TEXT",
@@ -238,7 +236,7 @@ const createChannel = async (params: CreateChannelParams) => {
 
   createdChannel.permissionOverwrites.set([
     {
-      id: everyone.id,
+      id: guild.roles.everyone.id,
       deny: Permissions.FLAGS.VIEW_CHANNEL,
     },
     {
@@ -345,62 +343,64 @@ const isIn = async (guildId: string): Promise<boolean> => {
   }
 };
 
-const listChannels = async (inviteCode: string) => {
-  logger.verbose(`listChannels params: ${inviteCode}`);
+const listChannels = async (guildId: string) => {
+  logger.verbose(`listChannels params: ${guildId}`);
   try {
-    const invite = await Main.Client.fetchInvite(inviteCode);
-    logger.verbose(`${JSON.stringify(invite)}`);
-    try {
-      const guild = await Main.Client.guilds.fetch(invite.guild.id);
-      if (
-        !guild.me.permissions.has(Permissions.FLAGS.ADMINISTRATOR) &&
-        !guild.me.permissions.has(Permissions.FLAGS.MANAGE_ROLES)
-      ) {
-        return {
-          serverId: invite.guild.id,
-          channels: [],
-          roles: [],
-          isAdmin: false,
-        };
-      }
+    const guild = await Main.Client.guilds.fetch(guildId);
+    logger.verbose(`${JSON.stringify(guild)}`);
+    const { icon: iconId, name: serverName } = guild;
+    const serverIcon =
+      iconId === null
+        ? ""
+        : `https://cdn.discordapp.com/icons/${guildId}/${iconId}.png`;
 
-      logger.verbose(`${JSON.stringify(guild)}`);
-      const channels = guild?.channels.cache
-        .filter(
-          (c) =>
-            c.type === "GUILD_TEXT" &&
-            c
-              .permissionsFor(guild.roles.everyone)
-              .has(Permissions.FLAGS.VIEW_CHANNEL)
-        )
-        .map((c) => ({
-          id: c?.id,
-          name: c?.name,
-        }));
-
-      const roles = guild?.roles.cache.filter((r) => r.name !== "@everyone");
-
-      logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
+    if (
+      !guild.me.permissions.has(Permissions.FLAGS.ADMINISTRATOR) &&
+      !guild.me.permissions.has(Permissions.FLAGS.MANAGE_ROLES)
+    ) {
       return {
-        serverId: invite.guild.id,
-        channels,
-        roles,
-        isAdmin: true,
-      };
-    } catch (error) {
-      return {
-        serverId: invite.guild.id,
+        serverIcon,
+        serverName,
+        serverId: guildId,
         channels: [],
         roles: [],
-        isAdmin: null,
+        isAdmin: false,
       };
     }
+
+    const channels = guild?.channels.cache
+      .filter(
+        (c) =>
+          c.type === "GUILD_TEXT" &&
+          c
+            .permissionsFor(guild.roles.everyone)
+            .has(Permissions.FLAGS.VIEW_CHANNEL)
+      )
+      .map((c) => ({
+        id: c?.id,
+        name: c?.name,
+      }));
+
+    const roles = guild?.roles.cache.filter((r) => r.name !== "@everyone");
+
+    logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
+    return {
+      serverIcon,
+      serverName,
+      serverId: guildId,
+      channels,
+      roles,
+      isAdmin: true,
+    };
   } catch (error) {
-    if (error.code === 50001) {
-      logger.verbose(`listChannels: guild or inviteCode not found`);
-      throw new ActionError("guild or inviteCode not found.", [inviteCode]);
-    }
-    throw error;
+    return {
+      serverIcon: "",
+      serverName: "",
+      serverId: guildId,
+      channels: [],
+      roles: [],
+      isAdmin: null,
+    };
   }
 };
 
@@ -415,18 +415,6 @@ const listAdministeredServers = async (userId: string) => {
 
   logger.verbose(`listAdministeredServers result: ${administeredServers}`);
   return administeredServers;
-};
-
-const getCategories = async (inviteCode: string) => {
-  const invite = await Main.Client.fetchInvite(inviteCode);
-  const guild = await Main.Client.guilds.fetch(invite.guild.id);
-  const categories = guild.channels.cache
-    .filter((c) => c.type === "GUILD_CATEGORY")
-    .map((c) => ({ id: c.id, name: c.name }));
-  return {
-    serverId: invite.guild.id,
-    categories,
-  };
 };
 
 const getGuild = async (guildId: string) => {
@@ -459,7 +447,7 @@ const sendJoinButton = async (guildId: string, channelId: string) => {
 
 const getServerOwner = async (guildId: string, userId: string) => {
   const guild = await Main.Client.guilds.fetch(guildId);
-  return guild.ownerId === userId;
+  return guild.members.cache.get(userId)?.permissions.has("ADMINISTRATOR");
 };
 
 const getUser = async (userId: string) => Main.Client.users.fetch(userId);
@@ -516,7 +504,6 @@ export {
   listChannels,
   listAdministeredServers,
   createChannel,
-  getCategories,
   getGuild,
   getRole,
   deleteChannelAndRole,
