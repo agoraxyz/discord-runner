@@ -95,6 +95,7 @@ const createRouter = () => {
     "/guard",
     validators.bodyDiscordId("serverId"),
     validators.entryChannelIdValidator,
+    validators.roleIdsArrayValidator,
     controller.createGuildGuard
   );
 

@@ -5,7 +5,6 @@ import {
   Message,
   MessageEmbed,
   PartialGuildMember,
-  Permissions,
   RateLimitData,
   Role,
 } from "discord.js";
@@ -83,32 +82,11 @@ abstract class Events {
   async onRoleCreate([role]: [Role]): Promise<void> {
     const guildOfServer = await getGuildsOfServer(role.guild.id);
 
-    if (!guildOfServer[0]?.isGuarded) {
+    if (!guildOfServer?.[0]?.isGuarded) {
       return;
     }
 
-    try {
-      const entryChannel = await role.guild.channels.fetch(
-        guildOfServer[0].inviteChannel
-      );
-
-      await role.edit({ permissions: role.permissions.add("VIEW_CHANNEL") });
-
-      if (
-        !entryChannel.permissionOverwrites?.cache
-          .get(role.id)
-          ?.deny.has(Permissions.FLAGS.VIEW_CHANNEL)
-      )
-        await entryChannel.permissionOverwrites?.create(
-          role,
-          { VIEW_CHANNEL: false, SEND_MESSAGES: false },
-          {
-            reason: `Role edited by ${Main.Client.user.username} because Guild Guard is enabled.`,
-          }
-        );
-    } catch (error) {
-      logger.verbose(`No entry channel for guild: ${guildOfServer[0].id}`);
-    }
+    await role.edit({ permissions: role.permissions.remove("VIEW_CHANNEL") });
   }
 }
 

@@ -182,10 +182,11 @@ const controller = {
       return;
     }
     try {
-      const { serverId, entryChannelId } = req.body;
+      const { serverId, entryChannelId, roleIds } = req.body;
       const createdEntryChannelId = await setupGuildGuard(
         serverId,
-        entryChannelId
+        entryChannelId,
+        roleIds
       );
       res.status(200).json(createdEntryChannelId);
     } catch (error) {
