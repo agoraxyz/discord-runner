@@ -139,13 +139,6 @@ const createRouter = () => {
     controller.administeredServers
   );
 
-  router.post(
-    "/owner/",
-    validators.bodyDiscordId("guildId"),
-    validators.bodyDiscordId("platformUserId"),
-    controller.getServerOwner
-  );
-
   router.get(
     "/user/:platformUserId",
     validators.paramDiscordId("platformUserId"),

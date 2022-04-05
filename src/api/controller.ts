@@ -17,7 +17,6 @@ import {
   updateRoleName,
   sendJoinButton,
   deleteRole,
-  getServerOwner,
   getUser,
   manageMigratedActions,
   setupGuildGuard,
@@ -328,23 +327,6 @@ const controller = {
     try {
       const { guildId, channelId } = req.body;
       const result = await sendJoinButton(guildId, channelId);
-      res.status(200).json(result);
-    } catch (error) {
-      const errorMsg = getErrorResult(error);
-      res.status(400).json(errorMsg);
-    }
-  },
-
-  getServerOwner: async (req: Request, res: Response): Promise<void> => {
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-    try {
-      const { guildId, platformUserId } = req.body;
-      const result = await getServerOwner(guildId, platformUserId);
       res.status(200).json(result);
     } catch (error) {
       const errorMsg = getErrorResult(error);

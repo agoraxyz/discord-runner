@@ -451,11 +451,6 @@ const sendJoinButton = async (guildId: string, channelId: string) => {
   return true;
 };
 
-const getServerOwner = async (guildId: string, userId: string) => {
-  const guild = await Main.Client.guilds.fetch(guildId);
-  return guild.members.cache.get(userId)?.permissions.has("ADMINISTRATOR");
-};
-
 const getUser = async (userId: string) => Main.Client.users.fetch(userId);
 
 const manageMigratedActions = async (
@@ -552,6 +547,7 @@ const setupGuildGuard = async (
     ) {
       await existingChannel.permissionOverwrites.create(guild.roles.everyone, {
         VIEW_CHANNEL: true,
+        READ_MESSAGE_HISTORY: true,
         SEND_MESSAGES: false,
       });
     }
@@ -641,7 +637,6 @@ export {
   deleteChannelAndRole,
   deleteRole,
   sendJoinButton,
-  getServerOwner,
   getUser,
   setupGuildGuard,
 };
