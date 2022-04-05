@@ -550,7 +550,7 @@ const setupGuildGuard = async (
         .get(guild.roles.everyone.id)
         ?.allow.has(Permissions.FLAGS.VIEW_CHANNEL)
     ) {
-      existingChannel.permissionOverwrites.create(guild.roles.everyone, {
+      await existingChannel.permissionOverwrites.create(guild.roles.everyone, {
         VIEW_CHANNEL: true,
         SEND_MESSAGES: false,
       });
