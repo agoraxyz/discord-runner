@@ -159,20 +159,14 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
                   .reduce((a, b) => a + b)
               : 0;
 
-            let percentage = `${(currBal / weightedVoteCount) * 100}`;
+            const percentage =
+              weightedVoteCount > 0 ? (currBal / weightedVoteCount) * 100 : 0;
+            const perc =
+              Number(percentage) % 1 !== 0
+                ? Number(percentage).toFixed(2)
+                : percentage;
 
-            if (Number(percentage) % 1 !== 0) {
-              percentage = Number(percentage).toFixed(2);
-            }
-
-            if (percentage === "NaN") {
-              percentage = "0";
-            }
-
-            optionVotes +=
-              `\n${poll.reactions[i]} ` +
-              `${poll.options[i]} ` +
-              `(${percentage}%)`;
+            optionVotes += `\n${poll.reactions[i]} ${poll.options[i]} (${perc}%)`;
           }
 
           dayjs.extend(utc);
