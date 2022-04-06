@@ -9,6 +9,7 @@ import {
   ThreadChannel,
   OverwriteResolvable,
   Collection,
+  PermissionOverwrites,
 } from "discord.js";
 import axios from "axios";
 import Main from "../Main";
@@ -186,11 +187,36 @@ const generateInvite = async (
       code: invite.code,
     };
   }
-  const newInvite = await guild.invites.create(inviteChannelId, { maxAge: 0 });
+
+  let channelId: string;
+  if (guild.channels.cache.find((c) => c.id === inviteChannelId)) {
+    channelId = inviteChannelId;
+  } else {
+    logger.warn(
+      `Invite channel ${inviteChannelId} does not exist in server ${guildId}`
+    );
+
+    const publicChannel = guild.channels.cache.find(
+      (c) =>
+        c.isText() &&
+        !(c as any).permissionOverwrites?.cache.some(
+          (po: PermissionOverwrites) =>
+            po.id === guild.roles.everyone.id && po.deny.any("VIEW_CHANNEL")
+        )
+    );
+    if (publicChannel) {
+      channelId = publicChannel.id;
+    } else {
+      logger.warn(`Cannot find public channel in ${guildId}`);
+      channelId = guild.channels.cache.find((c) => c.isText())?.id;
+    }
+  }
+
+  const newInvite = await guild.invites.create(channelId, { maxAge: 0 });
   logger.verbose(`generated invite code: ${newInvite?.code}`);
   Main.inviteDataCache.set(guildId, {
     code: newInvite.code,
-    inviteChannelId,
+    inviteChannelId: channelId,
   });
   return {
     code: newInvite.code,
@@ -372,7 +398,6 @@ const listChannels = async (guildId: string) => {
         name: c?.name,
       }));
 
-
     const roles = guild?.roles.cache.filter(
       (r) => r.id !== guild.roles.everyone.id
     );
@@ -383,7 +408,6 @@ const listChannels = async (guildId: string) => {
       0
     );
 
-
     logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
     return {
       serverIcon,
@@ -393,7 +417,6 @@ const listChannels = async (guildId: string) => {
       roles,
       isAdmin: true,
       membersWithoutRole,
-
     };
   } catch (error) {
     return {
