@@ -21,17 +21,19 @@ const createPoll = async (poll: NewPoll): Promise<boolean> => {
       poll.channelId
     ) as TextChannel;
 
+    const { channelId, question, expDate, options, reactions } = poll;
+
     const res = await axios.post(
       `${config.backendUrl}/poll`,
       {
-        platform: "DISCORD",
+        platform: config.platform,
         platformId: channel.guildId,
-        channelId: poll.channelId,
-        question: poll.question,
+        channelId,
+        question,
         startDate: dayjs().unix(),
-        expDate: poll.expDate,
-        options: poll.options,
-        reactions: poll.reactions,
+        expDate,
+        options,
+        reactions,
       },
       { timeout: 150000 }
     );
@@ -63,9 +65,7 @@ const createPoll = async (poll: NewPoll): Promise<boolean> => {
 
     const msg = await channel.send({ embeds: [embed] });
 
-    poll.reactions.map(
-      async (emoji) => await (msg as any as Message).react(emoji)
-    );
+    poll.reactions.map(async (emoji) => await (msg as Message).react(emoji));
 
     return true;
   } catch (e) {

@@ -44,7 +44,7 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
     const result = msg.embeds[0].title
       .match(/Poll #(.*?): /g)
-      .map((str) => str.substring(6, str.length - 2));
+      .map((str: string) => str.substring(6, str.length - 2));
 
     if (result.length === 1) {
       try {
@@ -62,7 +62,7 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
           const emoji = reaction._emoji;
 
           if (!removed) {
-            let userReactions;
+            let userReactions: ReactionEmoji[];
 
             if (
               poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
@@ -76,7 +76,7 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
               const voteResponse = await axios.post(
                 `${config.backendUrl}/poll/vote`,
                 {
-                  platform: "DISCORD",
+                  platform: config.platform,
                   pollId,
                   platformUserId: user.id,
                   optionIndex,
@@ -104,28 +104,28 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
               logger.error("Failed to remove reaction:", error);
             }
           } else if (
-              poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
-              poll.reactions.includes(emoji.name)
-            ) {
-              const emojiName = poll.reactions.includes(emoji.name)
-                ? emoji.name
-                : `<:${emoji.name}:${emoji.id}>`;
-              const optionIndex = poll.reactions.indexOf(emojiName);
+            poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
+            poll.reactions.includes(emoji.name)
+          ) {
+            const emojiName = poll.reactions.includes(emoji.name)
+              ? emoji.name
+              : `<:${emoji.name}:${emoji.id}>`;
+            const optionIndex = poll.reactions.indexOf(emojiName);
 
-              const voteResponse = await axios.delete(
-                `${config.backendUrl}/poll/vote`,
-                {
-                  data: {
-                    platform: "DISCORD",
-                    pollId,
-                    platformUserId: user.id,
-                    optionIndex,
-                  } as Vote,
-                }
-              );
+            const voteResponse = await axios.delete(
+              `${config.backendUrl}/poll/vote`,
+              {
+                data: {
+                  platform: config.platform,
+                  pollId,
+                  platformUserId: user.id,
+                  optionIndex,
+                } as Vote,
+              }
+            );
 
-              logAxiosResponse(voteResponse);
-            }
+            logAxiosResponse(voteResponse);
+          }
 
           const votersResponse = await axios.get(
             `${config.backendUrl}/poll/voters/${pollId}`
@@ -150,7 +150,7 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
             }
           }
 
-          let content = "";
+          let optionVotes = "";
 
           for (let i = 0; i < poll.options.length; i += 1) {
             const currBal = votesByOption[i].length
@@ -169,7 +169,7 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
               percentage = "0";
             }
 
-            content +=
+            optionVotes +=
               `\n${poll.reactions[i]} ` +
               `${poll.options[i]} ` +
               `(${percentage}%)`;
@@ -177,16 +177,16 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
           dayjs.extend(utc);
 
-          content += `\n\nPoll ends on ${dayjs
+          const date = `Poll ends on ${dayjs
             .unix(Number(poll.expDate))
             .utc()
             .format("YYYY-MM-DD HH:mm UTC")}`;
 
-          content += `\n\n${voteCount} person${
+          const voters = `${voteCount} person${
             voteCount > 1 || voteCount === 0 ? "s" : ""
           } voted so far.`;
 
-          msg.embeds[0].description = content;
+          msg.embeds[0].description = `${optionVotes}\n\n${date}\n\n${voters}`;
 
           msg.edit({ embeds: [msg.embeds[0]] });
         } else {
@@ -219,6 +219,18 @@ abstract class Events {
 
     if (poll) {
       switch (pollStorage.getUserStep(userId)) {
+        case 1: {
+          pollStorage.savePollQuestion(userId, message.content);
+          pollStorage.setUserStep(userId, 2);
+
+          message.channel.send(
+            "Give me the options and the corresponding emojies for the poll " +
+              "(one after another)."
+          );
+
+          break;
+        }
+
         case 2: {
           if (poll.options.length === poll.reactions.length) {
             if (!poll.options.includes(message.content)) {
@@ -229,33 +241,33 @@ abstract class Events {
               message.reply("This option has already been added");
             }
           } else if (!poll.reactions.includes(message.content)) {
-              pollStorage.savePollReaction(userId, message.content);
+            pollStorage.savePollReaction(userId, message.content);
 
-              if (poll.options.length >= 2) {
-                message.reply(
-                  "Give me a new option or go to the nex step by using " +
-                    "**/enough**"
-                );
-              } else {
-                message.reply("Give me the next option");
-              }
-            } else {
+            if (poll.options.length >= 2) {
               message.reply(
-                "This emoji has already been used, choose another one"
+                "Give me a new option or go to the nex step by using " +
+                  "**/enough**"
               );
+            } else {
+              message.reply("Give me the next option");
             }
+          } else {
+            message.reply(
+              "This emoji has already been used, choose another one"
+            );
+          }
 
           break;
         }
 
         case 3: {
           try {
-            const duration = message.content.split(":");
+            const [day, hour, minute] = message.content.split(":");
 
             const expDate = dayjs()
-              .add(parseInt(duration[0], 10), "day")
-              .add(parseInt(duration[1], 10), "hour")
-              .add(parseInt(duration[2], 10), "minute")
+              .add(parseInt(day, 10), "day")
+              .add(parseInt(hour, 10), "hour")
+              .add(parseInt(minute, 10), "minute")
               .unix();
 
             pollStorage.savePollExpDate(userId, expDate.toString());
@@ -263,20 +275,22 @@ abstract class Events {
 
             await message.reply("Your poll will look like this:");
 
-            let content = "";
+            let optionVotes = "";
 
             for (let i = 0; i < poll.options.length; i += 1) {
-              content += `\n${poll.reactions[i]} ${poll.options[i]} (0%)`;
+              optionVotes += `\n${poll.reactions[i]} ${poll.options[i]} (0%)`;
             }
 
             dayjs.extend(utc);
 
-            content += `\n\nPoll ends on ${dayjs
+            const date = `Poll ends on ${dayjs
               .unix(Number(poll.expDate))
               .utc()
               .format("YYYY-MM-DD HH:mm UTC")}`;
 
-            content += "\n\n0 persons voted so far.";
+            const voters = "0 persons voted so far.";
+
+            const content = `${optionVotes}\n\n${date}\n\n${voters}`;
 
             const embed = new MessageEmbed({
               title: `Poll #69: ${poll.question}`,
@@ -296,18 +310,6 @@ abstract class Events {
           } catch (e) {
             message.reply("Incorrect input, please try again.");
           }
-
-          break;
-        }
-
-        case 1: {
-          pollStorage.savePollQuestion(userId, message.content);
-          pollStorage.setUserStep(userId, 2);
-
-          message.channel.send(
-            "Give me the options and the corresponding emojies for the poll " +
-              "(one after another)."
-          );
 
           break;
         }
@@ -376,7 +378,7 @@ abstract class Events {
   onMessageReactionRemove([reaction, user]: [ReactionEmoji, ClientUser]): void {
     messageReactionCommon(reaction, user, true);
   }
-  
+
   @On("roleCreate")
   async onRoleCreate([role]: [Role]): Promise<void> {
     const guildOfServer = await getGuildsOfServer(role.guild.id);

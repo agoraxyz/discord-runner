@@ -125,6 +125,7 @@ abstract class Slashes {
     );
 
     const message = await interaction.channel.send(payload);
+
     await message.react(config.joinButtonEmojis.emoji1);
     await message.react(config.joinButtonEmojis.emoji2);
 
@@ -140,7 +141,6 @@ abstract class Slashes {
   async poll(interaction: CommandInteraction) {
     if (interaction.channel.type !== "DM" && !interaction.user.bot) {
       const owner = await interaction.guild.fetchOwner();
-
       const userId = interaction.user.id;
 
       if (userId === owner.id) {
@@ -156,17 +156,14 @@ abstract class Slashes {
         } else {
           pollStorage.initPoll(userId, interaction.channel.id);
 
-          interaction.user
-            .send(
-              "Give me the subject of the poll. For example:\n" +
-                '"Do you think drinking milk is cool?"'
-            )
-            .then(() =>
-              interaction.reply({
-                content: "Check your DM's",
-                ephemeral: true,
-              })
-            );
+          await interaction.user.send(
+            "Give me the subject of the poll. For example:\n" +
+              '"Do you think drinking milk is cool?"'
+          );
+          interaction.reply({
+            content: "Check your DM's",
+            ephemeral: true,
+          });
         }
       } else {
         interaction.reply({

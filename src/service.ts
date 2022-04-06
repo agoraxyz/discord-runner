@@ -5,19 +5,22 @@ import logger from "./utils/logger";
 import { logAxiosResponse, logBackendError } from "./utils/utils";
 
 const API_BASE_URL = config.backendUrl;
-const PLATFORM = "DISCORD";
 
 const userJoined = async (platformUserId: string, serverId: string) => {
   logger.verbose(`userJoined params: ${platformUserId}, ${serverId}`);
   try {
     logger.verbose(`userJoined userId - ${platformUserId}`);
+
     const response = await axios.post(`${API_BASE_URL}/user/joinedPlatform`, {
-      platform: PLATFORM,
+      platform: config.platform,
       platformUserId,
       serverId,
     });
+
     logger.verbose(`joinedPlatform result:`);
+
     logAxiosResponse(response);
+
     return response.data;
   } catch (error) {
     logger.verbose("joinedPlatform error");
@@ -28,9 +31,10 @@ const userJoined = async (platformUserId: string, serverId: string) => {
 
 const userRemoved = async (platformUserId: string, serverId: string) => {
   logger.verbose(`userRemoved userId - ${platformUserId}`);
+
   axios
     .post(`${API_BASE_URL}/user/removeFromPlatform`, {
-      platform: PLATFORM,
+      platform: config.platform,
       platformUserId,
       serverId,
       triggerKick: false,
