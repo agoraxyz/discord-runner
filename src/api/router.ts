@@ -69,6 +69,8 @@ const createRouter = () => {
     "/role",
     validators.bodyDiscordId("serverId"),
     validators.roleNameValidator,
+    validators.isGuardedValidator,
+    validators.entryChannelIdValidator,
     controller.createRole
   );
 
@@ -77,6 +79,8 @@ const createRouter = () => {
     validators.bodyDiscordId("serverId"),
     validators.bodyDiscordId("roleId"),
     validators.roleNameValidator,
+    validators.isGuardedValidator,
+    validators.entryChannelIdValidator,
     controller.updateRole
   );
 
@@ -87,6 +91,14 @@ const createRouter = () => {
     controller.deleteRole
   );
 
+  router.post(
+    "/guard",
+    validators.bodyDiscordId("serverId"),
+    validators.entryChannelIdValidator,
+    validators.roleIdsArrayValidator,
+    controller.createGuildGuard
+  );
+
   router.get(
     "/isIn/:guildId",
     validators.paramDiscordId("guildId"),
@@ -94,8 +106,8 @@ const createRouter = () => {
   );
 
   router.get(
-    "/channels/:inviteCode",
-    validators.inviteCodeValidator,
+    "/channels/:guildId",
+    validators.paramDiscordId("guildId"),
     controller.channels
   );
 
@@ -109,7 +121,6 @@ const createRouter = () => {
   router.post(
     "/channels/create",
     validators.bodyDiscordId("guildId"),
-    validators.bodyDiscordId("roleId"),
     validators.channelNameValidator,
     controller.createChannel
   );
@@ -126,19 +137,6 @@ const createRouter = () => {
     "/administeredServers/:platformUserId",
     validators.paramDiscordId("platformUserId"),
     controller.administeredServers
-  );
-
-  router.get(
-    "/categories/:inviteCode",
-    validators.inviteCodeValidator,
-    controller.getCategories
-  );
-
-  router.post(
-    "/owner/",
-    validators.bodyDiscordId("guildId"),
-    validators.bodyDiscordId("platformUserId"),
-    controller.getServerOwner
   );
 
   router.get(
