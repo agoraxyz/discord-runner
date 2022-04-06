@@ -372,6 +372,7 @@ const listChannels = async (guildId: string) => {
         name: c?.name,
       }));
 
+
     const roles = guild?.roles.cache.filter(
       (r) => r.id !== guild.roles.everyone.id
     );
@@ -382,6 +383,7 @@ const listChannels = async (guildId: string) => {
       0
     );
 
+
     logger.verbose(`listChannels result: ${JSON.stringify(channels)}`);
     return {
       serverIcon,
@@ -391,6 +393,7 @@ const listChannels = async (guildId: string) => {
       roles,
       isAdmin: true,
       membersWithoutRole,
+
     };
   } catch (error) {
     return {
