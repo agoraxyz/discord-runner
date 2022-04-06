@@ -7,7 +7,6 @@ type ManageRolesParams = {
 
 type CreateChannelParams = {
   guildId: string;
-  roleId: string;
   channelName: string;
 };
 

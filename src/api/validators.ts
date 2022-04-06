@@ -9,7 +9,7 @@ const getIdValidatorForBody = (fieldName: string) =>
 export default {
   paramDiscordId: getIdValidatorForParam,
   bodyDiscordId: getIdValidatorForBody,
-  roleIdsArrayValidator: body("roleIds").isArray({ min: 1 }),
+  roleIdsArrayValidator: body("roleIds").optional().isArray({ min: 1 }),
   messageValidator: body("message").isString().trim().isLength({ min: 1 }),
   roleNameValidator: body("roleName").isString().trim().isLength({ min: 1 }),
   oldRoleNameValidator: body("oldRoleName")
@@ -26,4 +26,8 @@ export default {
     .isLength({ min: 1 }),
   categoryNameValidator: body("categoryName").isString().trim().optional(),
   isGuildValidator: body("isGuild").trim().isBoolean(),
+  isGuardedValidator: body("isGuarded").optional().isBoolean(),
+  entryChannelIdValidator: body("entryChannelId")
+    .optional()
+    .isLength({ min: 1 }),
 };

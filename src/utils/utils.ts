@@ -10,6 +10,7 @@ import {
   GuildChannel,
   Permissions,
   MessageOptions,
+  Role,
 } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
@@ -86,28 +87,47 @@ const createJoinInteractionPayload = (
     urlName: string;
     description: string;
     themeColor: string;
+    imageUrl: string;
   },
-  messageText: string,
-  buttonText: string
+  title: string = "Verify your wallet",
+  messageText: string = null,
+  buttonText: string = `Join ${guild?.name || "Guild"}`
 ) => {
-  const button = new MessageButton({
+  const joinButton = new MessageButton({
     customId: "join-button",
-    label: buttonText || `Join ${guild?.name || "Guild"}`,
+    label: buttonText,
     emoji: "🔗",
     style: "PRIMARY",
   });
-  const row = new MessageActionRow({ components: [button] });
+  const guideButton = new MessageButton({
+    label: "Guide",
+    url: "https://docs.guild.xyz/",
+    style: "LINK",
+  });
+  const row = new MessageActionRow({ components: [joinButton, guideButton] });
   return {
     embeds: [
       new MessageEmbed({
-        title: guild?.name || "Guild",
-        url: `${config.guildUrl}/${guild.urlName}`,
-        description: guild.description,
+        title,
+        url: guild ? `${config.guildUrl}/${guild?.urlName}` : null,
+        description:
+          messageText ||
+          guild?.description ||
+          "Join this guild and get your role(s)!",
         color: `#${config.embedColor}`,
+        author: {
+          name: guild?.name || "Guild",
+          iconURL: encodeURI(
+            guild?.imageUrl?.startsWith("https")
+              ? guild?.imageUrl
+              : "https://cdn.discordapp.com/attachments/950682012866465833/951448319169802250/kerek.png"
+          ),
+        },
+        thumbnail: {
+          url: "https://cdn.discordapp.com/attachments/950682012866465833/951448318976884826/dc-message.png",
+        },
         footer: {
-          text:
-            messageText ||
-            "Click the button to get access for the desired Role(s)!",
+          text: "Do not share your private keys. We will never ask for your seed phrase.",
         },
       }),
     ],
@@ -180,6 +200,31 @@ const getJoinReplyMessage = async (
   return message;
 };
 
+const denyViewEntryChannelForRole = async (
+  role: Role,
+  entryChannelId: string
+) => {
+  try {
+    const entryChannel = role.guild.channels.cache.get(
+      entryChannelId
+    ) as GuildChannel;
+    if (
+      !entryChannel.permissionOverwrites.cache
+        .get(role.id)
+        ?.deny.has(Permissions.FLAGS.VIEW_CHANNEL)
+    ) {
+      await entryChannel.permissionOverwrites.create(role.id, {
+        VIEW_CHANNEL: false,
+      });
+    }
+  } catch (error) {
+    logger.warn(error);
+    throw new Error(
+      `Entry channel does not exists. (server: ${role.guild.id}, channel: ${entryChannelId})`
+    );
+  }
+};
+
 export {
   getUserResult,
   getErrorResult,
@@ -189,4 +234,5 @@ export {
   createJoinInteractionPayload,
   getJoinReplyMessage,
   getAccessedChannelsByRoles,
+  denyViewEntryChannelForRole,
 };
