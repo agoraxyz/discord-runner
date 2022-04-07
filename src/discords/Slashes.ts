@@ -1,11 +1,12 @@
 /* eslint-disable class-methods-use-this */
 import { CommandInteraction, GuildMember, Permissions } from "discord.js";
 import { Discord, Slash, SlashOption } from "discordx";
+import axios from "axios";
 import { join, ping, status } from "../commands";
 import logger from "../utils/logger";
-import { createPoll, endPoll } from "../api/polls";
+import { createPoll /* endPoll */ } from "../api/polls";
 import pollStorage from "../api/pollStorage";
-import { createJoinInteractionPayload } from "../utils/utils";
+import { createJoinInteractionPayload, logAxiosResponse } from "../utils/utils";
 import { getGuildsOfServer } from "../service";
 import config from "../config";
 
@@ -135,15 +136,58 @@ abstract class Slashes {
     });
   }
 
-  // Slash commands for voting
-
   @Slash("poll", { description: "Creates a poll." })
   async poll(interaction: CommandInteraction) {
     if (interaction.channel.type !== "DM" && !interaction.user.bot) {
-      const owner = await interaction.guild.fetchOwner();
       const userId = interaction.user.id;
+      const {channel} = interaction;
+      const dcGuildId = channel.guildId;
 
-      if (userId === owner.id) {
+      const isAdminRes = await axios.get(
+        `${config.backendUrl}/guild/isAdmin/${dcGuildId}/${userId}`
+      );
+
+      logAxiosResponse(isAdminRes);
+
+      const isAdmin = isAdminRes.data;
+
+      if (isAdmin) {
+        const guildIdRes = await axios.get(
+          `${config.backendUrl}/guild/platformId/${dcGuildId}`
+        );
+
+        logAxiosResponse(guildIdRes);
+
+        const guildId = guildIdRes.data.id;
+
+        const guildRes = await axios.get(
+          `${config.backendUrl}/guild/${guildId}`
+        );
+
+        if (!guildRes) {
+          interaction.reply({
+            content: "Something went wrong. Please try again or contact us.",
+            ephemeral: true,
+          });
+          return;
+        }
+
+        const requirements = guildRes.data.roles[0].requirements.filter(
+          (requirement) => requirement.type === "ERC20"
+        );
+
+        if (requirements.length === 0) {
+          interaction.reply({
+            content:
+              "Your guild has no requirement with an appropriate token standard.\n" +
+              "Weighted polls only support ERC20.",
+            ephemeral: true,
+          });
+          return;
+        }
+
+        // TODO: create a function for showing requirements
+        // to the user in a Discord list
         const userStep = pollStorage.getUserStep(userId);
 
         if (userStep) {
@@ -154,10 +198,11 @@ abstract class Slashes {
             ephemeral: true,
           });
         } else {
-          pollStorage.initPoll(userId, interaction.channel.id);
+          pollStorage.initPoll(userId, channel.id);
+          pollStorage.saveReqId(userId, requirements[0].id);
 
           await interaction.user.send(
-            "Give me the subject of the poll. For example:\n" +
+            "Please give me the subject of the poll. For example:\n" +
               '"Do you think drinking milk is cool?"'
           );
           interaction.reply({
@@ -167,7 +212,7 @@ abstract class Slashes {
         }
       } else {
         interaction.reply({
-          content: "Seems like you are not the guild owner.",
+          content: "Seems like you are not a guild admin.",
           ephemeral: true,
         });
       }
@@ -194,7 +239,7 @@ abstract class Slashes {
         pollStorage.setUserStep(userId, 3);
 
         interaction.reply(
-          "Give me the end date of the poll in the DD:HH:mm format"
+          "Please give me the duration of the poll in the DD:HH:mm format (days:hours:minutes)"
         );
       } else {
         interaction.reply("You didn't finish the previous steps.");
@@ -245,10 +290,15 @@ abstract class Slashes {
       pollStorage.initPoll(userId, poll.channelId);
       pollStorage.setUserStep(userId, 1);
 
-      interaction.reply({
+      await interaction.reply({
         content: "The current poll creation procedure has been restarted.",
         ephemeral: interaction.channel.type !== "DM",
       });
+
+      await interaction.user.send(
+        "Please give me the subject of the poll. For example:\n" +
+          '"Do you think drinking milk is cool?"'
+      );
     } else {
       interaction.reply({
         content: "You have no active poll creation procedure.",
@@ -276,6 +326,7 @@ abstract class Slashes {
     }
   }
 
+  /*
   @Slash("endpoll", { description: "Closes a poll." })
   async endPoll(
     @SlashOption("id", {
@@ -288,6 +339,7 @@ abstract class Slashes {
   ) {
     endPoll(`${id}`, interaction);
   }
+  */
 }
 
 export default Slashes;
