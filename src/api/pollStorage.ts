@@ -11,6 +11,7 @@ const getUserStep = (userId: string): number => userStep.get(userId);
 
 const initPoll = (userId: string, channelId: string): void => {
   pollOfUser.set(userId, {
+    requirementId: 0,
     channelId,
     question: "",
     options: [],
@@ -19,6 +20,13 @@ const initPoll = (userId: string, channelId: string): void => {
   });
 
   setUserStep(userId, 1);
+};
+
+const saveReqId = (userId: string, requirementId: number): void => {
+  const poll = pollOfUser.get(userId);
+
+  poll.requirementId = requirementId;
+  pollOfUser.set(userId, poll);
 };
 
 const savePollQuestion = (userId: string, question: string): void => {
@@ -72,6 +80,7 @@ export default {
   initPoll,
   setUserStep,
   getUserStep,
+  saveReqId,
   savePollQuestion,
   savePollOption,
   savePollReaction,

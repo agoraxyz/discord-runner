@@ -61,6 +61,7 @@ type InviteData = {
 };
 
 type NewPoll = {
+  requirementId: number;
   channelId: string;
   question: string;
   options: string[];

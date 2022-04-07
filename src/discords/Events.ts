@@ -60,17 +60,14 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
         if (dayjs().isBefore(dayjs.unix(poll.expDate))) {
           const emoji = reaction._emoji;
+          const emojiName = emoji.id
+            ? `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.id}>`
+            : emoji.name;
 
           if (!removed) {
             let userReactions: ReactionEmoji[];
 
-            if (
-              poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
-              poll.reactions.includes(emoji.name)
-            ) {
-              const emojiName = poll.reactions.includes(emoji.name)
-                ? emoji.name
-                : `<:${emoji.name}:${emoji.id}>`;
+            if (poll.reactions.includes(emojiName)) {
               const optionIndex = poll.reactions.indexOf(emojiName);
 
               const voteResponse = await axios.post(
@@ -98,18 +95,13 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
             try {
               Array.from(userReactions.values()).map(
-                async (react) => await (react as any).users.remove(user.id)
+                async (react) =>
+                  await msg.reactions.resolve(react).users.remove(user)
               );
             } catch (error) {
               logger.error("Failed to remove reaction:", error);
             }
-          } else if (
-            poll.reactions.includes(`<:${emoji.name}:${emoji.id}>`) ||
-            poll.reactions.includes(emoji.name)
-          ) {
-            const emojiName = poll.reactions.includes(emoji.name)
-              ? emoji.name
-              : `<:${emoji.name}:${emoji.id}>`;
+          } else if (poll.reactions.includes(emojiName)) {
             const optionIndex = poll.reactions.indexOf(emojiName);
 
             const voteResponse = await axios.delete(
@@ -218,8 +210,8 @@ abstract class Events {
           pollStorage.setUserStep(userId, 2);
 
           message.channel.send(
-            "Give me the options and the corresponding emojies for the poll " +
-              "(one after another)."
+            "Please give me the options and the corresponding emojies for the poll (one after another).\n" +
+              "Make sure that you only use emojies from the server on which you want to create the poll."
           );
 
           break;

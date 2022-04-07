@@ -21,14 +21,14 @@ const createPoll = async (poll: NewPoll): Promise<boolean> => {
       poll.channelId
     ) as TextChannel;
 
-    const { channelId, question, expDate, options, reactions } = poll;
+    const { question, expDate, options, reactions, requirementId } = poll;
 
     const res = await axios.post(
       `${config.backendUrl}/poll`,
       {
         platform: config.platform,
         platformId: channel.guildId,
-        channelId,
+        requirementId,
         question,
         startDate: dayjs().unix(),
         expDate,
