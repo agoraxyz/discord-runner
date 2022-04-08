@@ -130,7 +130,7 @@ const manageRoles = async (
     } else {
       updatedMember = await member.roles.remove(roleId);
       const embed = new MessageEmbed({
-        title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements or just left it.`,
+        title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements, disconnected your Discord account or just left it.`,
         color: `#${config.embedColor}`,
       });
       try {
@@ -500,7 +500,7 @@ const manageMigratedActions = async (
       if (!userIds.includes(m.id)) {
         await m.roles.remove(roleId);
         const embed = new MessageEmbed({
-          title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements or just left it.`,
+          title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements, disconnected your Discord account or just left it.`,
           color: `#${config.embedColor}`,
         });
         try {
