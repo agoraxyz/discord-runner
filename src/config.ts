@@ -19,8 +19,8 @@ const embedColor = process.env.EMBED_COLOR || "6366f1";
 const guildUrl = process.env.GUILD_URL;
 
 const joinButtonEmojis = {
-  emoji1: process.env.JOIN_BUTTON_EMOJI1 || "898632078567026768",
-  emoji2: process.env.JOIN_BUTTON_EMOJI2 || "890145895251857458",
+  emoji1: process.env.JOIN_BUTTON_EMOJI1 || "🖤",
+  emoji2: process.env.JOIN_BUTTON_EMOJI2 || "🤍",
 };
 
 if (!discordToken)
