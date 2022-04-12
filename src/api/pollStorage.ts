@@ -1,4 +1,4 @@
-import { NewPoll } from "./types";
+import { NewPoll, SelectMenuOption, RequirementDict } from "./types";
 
 const pollOfUser: Map<string, NewPoll> = new Map();
 const userStep: Map<string, number> = new Map();
@@ -11,6 +11,8 @@ const getUserStep = (userId: string): number => userStep.get(userId);
 
 const initPoll = (userId: string, channelId: string): void => {
   pollOfUser.set(userId, {
+    roles: [],
+    requirements: {},
     requirementId: 0,
     channelId,
     question: "",
@@ -19,7 +21,24 @@ const initPoll = (userId: string, channelId: string): void => {
     expDate: "",
   });
 
-  setUserStep(userId, 1);
+  setUserStep(userId, 0);
+};
+
+const saveRoles = (userId: string, roles: SelectMenuOption[]): void => {
+  const poll = pollOfUser.get(userId);
+
+  poll.roles = roles;
+  pollOfUser.set(userId, poll);
+};
+
+const saveRequirements = (
+  userId: string,
+  requirements: RequirementDict
+): void => {
+  const poll = pollOfUser.get(userId);
+
+  poll.requirements = requirements;
+  pollOfUser.set(userId, poll);
 };
 
 const saveReqId = (userId: string, requirementId: number): void => {
@@ -80,6 +99,8 @@ export default {
   initPoll,
   setUserStep,
   getUserStep,
+  saveRoles,
+  saveRequirements,
   saveReqId,
   savePollQuestion,
   savePollOption,

@@ -1,5 +1,11 @@
 /* eslint-disable class-methods-use-this */
-import { CommandInteraction, GuildMember, Permissions } from "discord.js";
+import {
+  CommandInteraction,
+  GuildMember,
+  MessageActionRow,
+  MessageSelectMenu,
+  Permissions,
+} from "discord.js";
 import { Discord, Slash, SlashOption } from "discordx";
 import axios from "axios";
 import { join, ping, status } from "../commands";
@@ -9,6 +15,7 @@ import pollStorage from "../api/pollStorage";
 import { createJoinInteractionPayload, logAxiosResponse } from "../utils/utils";
 import { getGuildsOfServer } from "../service";
 import config from "../config";
+import { RequirementDict } from "../api/types";
 
 @Discord()
 abstract class Slashes {
@@ -140,7 +147,21 @@ abstract class Slashes {
   async poll(interaction: CommandInteraction) {
     if (interaction.channel.type !== "DM" && !interaction.user.bot) {
       const userId = interaction.user.id;
-      const {channel} = interaction;
+
+      const userStep = pollStorage.getUserStep(userId);
+
+      if (userStep) {
+        interaction.reply({
+          content:
+            "You already have an ongoing poll creation process.\n" +
+            "You can cancel it using **/cancel**.",
+          ephemeral: true,
+        });
+
+        return;
+      }
+
+      const { channel } = interaction;
       const dcGuildId = channel.guildId;
 
       const isAdminRes = await axios.get(
@@ -164,52 +185,76 @@ abstract class Slashes {
           `${config.backendUrl}/guild/${guildId}`
         );
 
+        logAxiosResponse(guildRes);
+
         if (!guildRes) {
           interaction.reply({
             content: "Something went wrong. Please try again or contact us.",
             ephemeral: true,
           });
+
           return;
         }
 
-        const requirements = guildRes.data.roles[0].requirements.filter(
-          (requirement) => requirement.type === "ERC20"
+        const reqs = Object.fromEntries(
+          guildRes.data.roles.map((role) => [
+            role.id,
+            role.requirements.filter(
+              (requirement) => requirement.type === "ERC20"
+            ),
+          ])
         );
 
-        if (requirements.length === 0) {
+        const roles = guildRes.data.roles
+          .filter((role) => reqs[role.id].length > 0)
+          .map((role) => ({
+            label: role.name,
+            description: "",
+            value: `${role.id}`,
+          }));
+
+        if (roles.length === 0) {
           interaction.reply({
             content:
-              "Your guild has no requirement with an appropriate token standard.\n" +
+              "Your guild has no role with appropriate requirements.\n" +
               "Weighted polls only support ERC20.",
             ephemeral: true,
           });
           return;
         }
 
-        // TODO: create a function for showing requirements
-        // to the user in a Discord list
-        const userStep = pollStorage.getUserStep(userId);
+        pollStorage.initPoll(userId, channel.id);
 
-        if (userStep) {
-          interaction.reply({
-            content:
-              "You already have an ongoing poll creation process.\n" +
-              "You can cancel it using **/cancel**.",
-            ephemeral: true,
-          });
-        } else {
-          pollStorage.initPoll(userId, channel.id);
-          pollStorage.saveReqId(userId, requirements[0].id);
+        const requirements = Object.fromEntries(
+          Object.entries(reqs).map(([k, v]) => [
+            k,
+            v.map((req) => ({
+              label: req.symbol,
+              description: `${req.name} on ${req.chain}`,
+              value: `${req.id}`,
+            })),
+          ])
+        );
 
-          await interaction.user.send(
-            "Please give me the subject of the poll. For example:\n" +
-              '"Do you think drinking milk is cool?"'
-          );
-          interaction.reply({
-            content: "Check your DM's",
-            ephemeral: true,
-          });
-        }
+        pollStorage.saveRequirements(userId, requirements as RequirementDict);
+        pollStorage.saveRoles(userId, roles);
+
+        const row = new MessageActionRow().addComponents(
+          new MessageSelectMenu()
+            .setCustomId("role-menu")
+            .setPlaceholder("No role selected")
+            .addOptions(roles)
+        );
+
+        await interaction.user.send({
+          content: "Please choose a role",
+          components: [row],
+        });
+
+        interaction.reply({
+          content: "Check your DM's",
+          ephemeral: true,
+        });
       } else {
         interaction.reply({
           content: "Seems like you are not a guild admin.",
@@ -288,17 +333,25 @@ abstract class Slashes {
 
       pollStorage.deleteMemory(userId);
       pollStorage.initPoll(userId, poll.channelId);
-      pollStorage.setUserStep(userId, 1);
+      pollStorage.saveRequirements(userId, poll.requirements);
+      pollStorage.saveRoles(userId, poll.roles);
 
       await interaction.reply({
         content: "The current poll creation procedure has been restarted.",
         ephemeral: interaction.channel.type !== "DM",
       });
 
-      await interaction.user.send(
-        "Please give me the subject of the poll. For example:\n" +
-          '"Do you think drinking milk is cool?"'
+      const row = new MessageActionRow().addComponents(
+        new MessageSelectMenu()
+          .setCustomId("role-menu")
+          .setPlaceholder("No role selected")
+          .addOptions(poll.roles)
       );
+
+      await interaction.user.send({
+        content: "Please choose a role",
+        components: [row],
+      });
     } else {
       interaction.reply({
         content: "You have no active poll creation procedure.",
