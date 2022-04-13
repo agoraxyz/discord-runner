@@ -42,25 +42,23 @@ const createPoll = async (poll: NewPoll): Promise<boolean> => {
 
     const storedPoll: Poll = res.data;
 
-    let content = "";
-
-    for (let i = 0; i < poll.options.length; i += 1) {
-      content += `\n${poll.reactions[i]} ${poll.options[i]} (0%)`;
-    }
+    const optionsText = options
+      .map((option, idx) => `${reactions[idx]} ${option}\n▫️0%`)
+      .join("\n\n");
 
     dayjs.extend(utc);
 
-    content += `\n\nPoll ends on ${dayjs
+    const dateText = `Poll ends on ${dayjs
       .unix(Number(poll.expDate))
       .utc()
       .format("YYYY-MM-DD HH:mm UTC")}`;
 
-    content += "\n\n0 persons voted so far.";
+    const votersText = "👥 0 persons voted so far.";
 
     const embed = new MessageEmbed({
       title: `Poll #${storedPoll.id}: ${poll.question}`,
       color: `#${config.embedColor}`,
-      description: content,
+      description: `${optionsText}\n\n${dateText}\n\n${votersText}`,
     });
 
     const msg = await channel.send({ embeds: [embed] });

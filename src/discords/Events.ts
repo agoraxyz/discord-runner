@@ -27,6 +27,7 @@ import pollStorage from "../api/pollStorage";
 import config from "../config";
 import { logAxiosResponse } from "../utils/utils";
 import { UserVote, Vote } from "../api/types";
+import NotDM from "../guards/NotDM";
 
 const messageReactionCommon = async (reaction, user, removed: boolean) => {
   if (!user.bot) {
@@ -42,11 +43,11 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
     const msg = reaction.message;
 
-    const result = msg.embeds[0].title
+    const result = msg.embeds[0]?.title
       .match(/Poll #(.*?): /g)
       .map((str: string) => str.substring(6, str.length - 2));
 
-    if (result.length === 1) {
+    if (result?.length === 1) {
       try {
         const pollId = Number(result[0]);
 
@@ -58,7 +59,9 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
         const poll = pollResponse.data;
 
-        if (dayjs().isBefore(dayjs.unix(poll.expDate))) {
+        const { options, reactions, expDate } = poll;
+
+        if (dayjs().isBefore(dayjs.unix(expDate))) {
           const emoji = reaction._emoji;
           const emojiName = emoji.id
             ? `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.id}>`
@@ -67,8 +70,8 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
           if (!removed) {
             let userReactions: ReactionEmoji[];
 
-            if (poll.reactions.includes(emojiName)) {
-              const optionIndex = poll.reactions.indexOf(emojiName);
+            if (reactions.includes(emojiName)) {
+              const optionIndex = reactions.indexOf(emojiName);
 
               const voteResponse = await axios.post(
                 `${config.backendUrl}/poll/vote`,
@@ -101,8 +104,8 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
             } catch (error) {
               logger.error("Failed to remove reaction:", error);
             }
-          } else if (poll.reactions.includes(emojiName)) {
-            const optionIndex = poll.reactions.indexOf(emojiName);
+          } else if (reactions.includes(emojiName)) {
+            const optionIndex = reactions.indexOf(emojiName);
 
             const voteResponse = await axios.delete(
               `${config.backendUrl}/poll/vote`,
@@ -129,50 +132,43 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
             [k: number]: UserVote[];
           } = votersResponse.data;
 
-          let voteCount = 0;
-          let weightedVoteCount = 0;
-
-          for (let i = 0; i < poll.options.length; i += 1) {
-            voteCount += votesByOption[i].length;
-
-            if (votesByOption[i].length) {
-              weightedVoteCount += votesByOption[i]
-                .map((vote) => vote.balance)
-                .reduce((a, b) => a + b);
-            }
-          }
-
-          let optionVotes = "";
-
-          for (let i = 0; i < poll.options.length; i += 1) {
-            const currBal = votesByOption[i].length
-              ? votesByOption[i]
+          const votesForEachOption = options.map((_, idx) =>
+            votesByOption[idx].length
+              ? votesByOption[idx]
                   .map((vote) => vote.balance)
                   .reduce((a, b) => a + b)
-              : 0;
+              : 0
+          );
 
-            const percentage =
-              weightedVoteCount > 0 ? (currBal / weightedVoteCount) * 100 : 0;
-            const perc =
-              Number(percentage) % 1 !== 0
-                ? Number(percentage).toFixed(2)
-                : percentage;
+          const allVotes = votesForEachOption.reduce((a, b) => a + b);
 
-            optionVotes += `\n${poll.reactions[i]} ${poll.options[i]} (${perc}%)`;
-          }
+          const numOfVoters = options
+            .map((_, idx) => votesByOption[idx].length)
+            .reduce((a, b) => a + b);
+
+          const optionsText = options
+            .map(
+              (option, idx) =>
+                `${reactions[idx]} ${option}\n▫️${
+                  votesByOption[idx].length > 0
+                    ? ((votesForEachOption[idx] / allVotes) * 100).toFixed(2)
+                    : 0
+                }%`
+            )
+            .join("\n\n");
 
           dayjs.extend(utc);
 
-          const date = `Poll ends on ${dayjs
-            .unix(Number(poll.expDate))
+          const dateText = `Poll ends on ${dayjs
+            .unix(Number(expDate))
             .utc()
             .format("YYYY-MM-DD HH:mm UTC")}`;
 
-          const voters = `${voteCount} person${
-            voteCount > 1 || voteCount === 0 ? "s" : ""
+          const votersText = `👥 ${numOfVoters} person${
+            numOfVoters === 1 ? "" : "s"
           } voted so far.`;
 
-          msg.embeds[0].description = `${optionVotes}\n\n${date}\n\n${voters}`;
+          msg.embeds[0].description = `${optionsText}\n\n${dateText}\n\n${votersText}`;
 
           msg.edit({ embeds: [msg.embeds[0]] });
         } else {
@@ -198,12 +194,25 @@ abstract class Events {
   }
 
   @On("messageCreate")
+  @Guard(NotABot, NotDM)
+  async onPublicMessage([message]: [Message]): Promise<void> {
+    if (message.content.match(/^(!|\/)((join)(-guild|)|verify)$/)) {
+      message.reply(
+        "You are close, but not enough.\n" +
+          'Please search for the post that has the "join" button then click on the button.'
+      );
+    }
+  }
+
+  @On("messageCreate")
   @Guard(NotABot, IsDM, NotACommand)
   async onPrivateMessage([message]: [Message]): Promise<void> {
     const userId = message.author.id;
     const poll = pollStorage.getPoll(userId);
 
     if (poll) {
+      const { question, options, reactions } = poll;
+
       switch (pollStorage.getUserStep(userId)) {
         case 1: {
           pollStorage.savePollQuestion(userId, message.content);
@@ -218,18 +227,18 @@ abstract class Events {
         }
 
         case 2: {
-          if (poll.options.length === poll.reactions.length) {
-            if (!poll.options.includes(message.content)) {
+          if (options.length === reactions.length) {
+            if (!options.includes(message.content)) {
               pollStorage.savePollOption(userId, message.content);
 
               message.reply("Now send me the corresponding emoji");
             } else {
               message.reply("This option has already been added");
             }
-          } else if (!poll.reactions.includes(message.content)) {
+          } else if (!reactions.includes(message.content)) {
             pollStorage.savePollReaction(userId, message.content);
 
-            if (poll.options.length >= 2) {
+            if (options.length >= 2) {
               message.reply(
                 "Give me a new option or go to the nex step by using " +
                   "**/enough**"
@@ -261,32 +270,33 @@ abstract class Events {
 
             await message.reply("Your poll will look like this:");
 
-            let optionVotes = "";
-
-            for (let i = 0; i < poll.options.length; i += 1) {
-              optionVotes += `\n${poll.reactions[i]} ${poll.options[i]} (0%)`;
-            }
+            const optionsText = options
+              .map(
+                (option, idx) =>
+                  `${reactions[idx]} ${option}\n▫️${(
+                    100 / options.length
+                  ).toFixed(2)}%`
+              )
+              .join("\n\n");
 
             dayjs.extend(utc);
 
-            const date = `Poll ends on ${dayjs
-              .unix(Number(poll.expDate))
+            const dateText = `Poll ends on ${dayjs
+              .unix(Number(expDate))
               .utc()
               .format("YYYY-MM-DD HH:mm UTC")}`;
 
-            const voters = "0 persons voted so far.";
-
-            const content = `${optionVotes}\n\n${date}\n\n${voters}`;
+            const votersText = "👥 420 persons voted so far.";
 
             const embed = new MessageEmbed({
-              title: `Poll #69: ${poll.question}`,
+              title: `Poll #69: ${question}`,
               color: `#${config.embedColor}`,
-              description: content,
+              description: `${optionsText}\n\n${dateText}\n\n${votersText}`,
             });
 
             const msg = await message.channel.send({ embeds: [embed] });
 
-            poll.reactions.map(async (emoji) => await msg.react(emoji));
+            reactions.map(async (emoji) => await msg.react(emoji));
 
             await message.reply(
               "You can accept it by using **/done**,\n" +
