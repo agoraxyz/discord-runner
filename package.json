@@ -17,7 +17,7 @@
   "dependencies": {
     "@discordx/utilities": "^3.0.2",
     "@types/redis": "^2.8.31",
-    "axios": "^0.21.1",
+    "axios": "^0.26.1",
     "discord.js": "^13.2.0",
     "discordx": "^7.0.0",
     "dotenv": "^9.0.2",
