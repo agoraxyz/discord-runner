@@ -28,6 +28,7 @@ import config from "../config";
 import { logAxiosResponse } from "../utils/utils";
 import { UserVote, Vote } from "../api/types";
 import NotDM from "../guards/NotDM";
+import { createPollText } from "../api/polls";
 
 const messageReactionCommon = async (reaction, user, removed: boolean) => {
   if (!user.bot) {
@@ -59,7 +60,7 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
         const poll = pollResponse.data;
 
-        const { options, reactions, expDate } = poll;
+        const { reactions, expDate } = poll;
 
         if (dayjs().isBefore(dayjs.unix(expDate))) {
           const emoji = reaction._emoji;
@@ -128,47 +129,10 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
           logAxiosResponse(votersResponse);
 
-          const votesByOption: {
-            [k: number]: UserVote[];
-          } = votersResponse.data;
-
-          const votesForEachOption = options.map((_, idx) =>
-            votesByOption[idx].length
-              ? votesByOption[idx]
-                  .map((vote) => vote.balance)
-                  .reduce((a, b) => a + b)
-              : 0
+          msg.embeds[0].description = await createPollText(
+            poll,
+            votersResponse
           );
-
-          const allVotes = votesForEachOption.reduce((a, b) => a + b);
-
-          const numOfVoters = options
-            .map((_, idx) => votesByOption[idx].length)
-            .reduce((a, b) => a + b);
-
-          const optionsText = options
-            .map(
-              (option, idx) =>
-                `${reactions[idx]} ${option}\n▫️${
-                  votesByOption[idx].length > 0
-                    ? ((votesForEachOption[idx] / allVotes) * 100).toFixed(2)
-                    : 0
-                }%`
-            )
-            .join("\n\n");
-
-          dayjs.extend(utc);
-
-          const dateText = `Poll ends on ${dayjs
-            .unix(Number(expDate))
-            .utc()
-            .format("YYYY-MM-DD HH:mm UTC")}`;
-
-          const votersText = `👥 ${numOfVoters} person${
-            numOfVoters === 1 ? "" : "s"
-          } voted so far.`;
-
-          msg.embeds[0].description = `${optionsText}\n\n${dateText}\n\n${votersText}`;
 
           msg.edit({ embeds: [msg.embeds[0]] });
         } else {
@@ -196,10 +160,12 @@ abstract class Events {
   @On("messageCreate")
   @Guard(NotABot, NotDM)
   async onPublicMessage([message]: [Message]): Promise<void> {
-    if (message.content.match(/^(!|\/)((join)(-guild|)|verify)$/)) {
+    if (
+      message.content.toLowerCase().match(/^(#|!|\/)((join)(-guild|)|verify)$/)
+    ) {
       message.reply(
         "You are close, but not enough.\n" +
-          'Please search for the post that has the "join" button then click on the button.'
+          'Please find the post that has a "join" button and click the button.'
       );
     }
   }
@@ -263,35 +229,20 @@ abstract class Events {
               .add(parseInt(day, 10), "day")
               .add(parseInt(hour, 10), "hour")
               .add(parseInt(minute, 10), "minute")
-              .unix();
+              .unix()
+              .toString();
 
-            pollStorage.savePollExpDate(userId, expDate.toString());
+            poll.expDate = expDate;
+
+            pollStorage.savePollExpDate(userId, expDate);
             pollStorage.setUserStep(userId, 4);
 
             await message.reply("Your poll will look like this:");
 
-            const optionsText = options
-              .map(
-                (option, idx) =>
-                  `${reactions[idx]} ${option}\n▫️${(
-                    100 / options.length
-                  ).toFixed(2)}%`
-              )
-              .join("\n\n");
-
-            dayjs.extend(utc);
-
-            const dateText = `Poll ends on ${dayjs
-              .unix(Number(expDate))
-              .utc()
-              .format("YYYY-MM-DD HH:mm UTC")}`;
-
-            const votersText = "👥 420 persons voted so far.";
-
             const embed = new MessageEmbed({
               title: `Poll #69: ${question}`,
               color: `#${config.embedColor}`,
-              description: `${optionsText}\n\n${dateText}\n\n${votersText}`,
+              description: await createPollText(poll),
             });
 
             const msg = await message.channel.send({ embeds: [embed] });
