@@ -219,8 +219,8 @@ abstract class Events {
           pollStorage.setUserStep(userId, 2);
 
           message.channel.send(
-            "Please give me the options and the corresponding emojies for the poll (one after another).\n" +
-              "Make sure that you only use emojies from the server on which you want to create the poll."
+            "Please give me the options and the corresponding emotes for the poll (one after another).\n" +
+              "Make sure that you only use emotes from the server on which you want to create the poll."
           );
 
           break;

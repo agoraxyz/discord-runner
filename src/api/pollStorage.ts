@@ -1,5 +1,7 @@
 import { NewPoll, SelectMenuOption, RequirementDict } from "./types";
 
+type NewPollRes = Map<string, NewPoll>;
+
 const pollOfUser: Map<string, NewPoll> = new Map();
 const userStep: Map<string, number> = new Map();
 
@@ -25,35 +27,20 @@ const initPoll = (userId: string, channelId: string): void => {
 };
 
 const saveRoles = (userId: string, roles: SelectMenuOption[]): void => {
-  const poll = pollOfUser.get(userId);
-
-  poll.roles = roles;
-  pollOfUser.set(userId, poll);
+  pollOfUser.set(userId, { ...pollOfUser.get(userId), roles });
 };
 
 const saveRequirements = (
   userId: string,
   requirements: RequirementDict
-): void => {
-  const poll = pollOfUser.get(userId);
+): NewPollRes =>
+  pollOfUser.set(userId, { ...pollOfUser.get(userId), requirements });
 
-  poll.requirements = requirements;
-  pollOfUser.set(userId, poll);
-};
+const saveReqId = (userId: string, requirementId: number): NewPollRes =>
+  pollOfUser.set(userId, { ...pollOfUser.get(userId), requirementId });
 
-const saveReqId = (userId: string, requirementId: number): void => {
-  const poll = pollOfUser.get(userId);
-
-  poll.requirementId = requirementId;
-  pollOfUser.set(userId, poll);
-};
-
-const savePollQuestion = (userId: string, question: string): void => {
-  const poll = pollOfUser.get(userId);
-
-  poll.question = question;
-  pollOfUser.set(userId, poll);
-};
+const savePollQuestion = (userId: string, question: string): NewPollRes =>
+  pollOfUser.set(userId, { ...pollOfUser.get(userId), question });
 
 const savePollOption = (userId: string, option: string): boolean => {
   const poll = pollOfUser.get(userId);
@@ -81,12 +68,8 @@ const savePollReaction = (userId: string, reaction: string): boolean => {
   return true;
 };
 
-const savePollExpDate = (userId: string, expDate: string): void => {
-  const poll = pollOfUser.get(userId);
-
-  poll.expDate = expDate;
-  pollOfUser.set(userId, poll);
-};
+const savePollExpDate = (userId: string, expDate: string): NewPollRes =>
+  pollOfUser.set(userId, { ...pollOfUser.get(userId), expDate });
 
 const getPoll = (userId: string) => pollOfUser.get(userId);
 

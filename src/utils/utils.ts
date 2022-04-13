@@ -60,13 +60,13 @@ const getErrorResult = (error: Error): ErrorResult => {
 };
 
 const logBackendError = (error) => {
-  if (
-    error.response?.data?.errors?.length > 0 &&
-    error.response?.data?.errors[0]?.msg
-  ) {
-    logger.verbose(error.response.data.errors[0].msg);
+  const errorData = error.response?.data;
+  const errors = errorData?.errors;
+
+  if (errors?.length > 0 && errors[0]?.msg) {
+    logger.verbose(errors[0].msg);
   } else if (error.response?.data) {
-    logger.verbose(JSON.stringify(error.response.data));
+    logger.verbose(JSON.stringify(errorData));
   } else {
     logger.verbose(JSON.stringify(error));
   }

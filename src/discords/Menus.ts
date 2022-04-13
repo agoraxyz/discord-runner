@@ -34,7 +34,7 @@ abstract class Menus {
     );
 
     await interaction.followUp({
-      content: `Good. Now please choose a requirement.`,
+      content: `Now please choose a requirement.`,
       components: [row],
     });
   }
