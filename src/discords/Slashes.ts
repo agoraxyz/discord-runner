@@ -36,10 +36,11 @@ abstract class Slashes {
       ephemeral: true,
     });
 
-    const embed = await status(interaction.user);
+    const { embed, row } = await status(interaction.user);
     await interaction.editReply({
       content: null,
       embeds: [embed],
+      components: row ? [row] : undefined,
     });
   }
 

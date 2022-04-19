@@ -1,5 +1,5 @@
 import axios from "axios";
-import { LevelInfo } from "./api/types";
+import { StatusInfo } from "./api/types";
 import config from "./config";
 import logger from "./utils/logger";
 import { logAxiosResponse, logBackendError } from "./utils/utils";
@@ -44,7 +44,7 @@ const userRemoved = async (platformUserId: string, serverId: string) => {
 
 const statusUpdate = async (
   platformUserId: string
-): Promise<LevelInfo[] | undefined> => {
+): Promise<StatusInfo | undefined> => {
   logger.verbose(`statusUpdate params: ${platformUserId}`);
   try {
     const response = await axios.post(`${API_BASE_URL}/user/statusUpdate`, {

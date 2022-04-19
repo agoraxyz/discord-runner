@@ -49,10 +49,14 @@ type DiscordChannel = {
   name: string;
 };
 
-type LevelInfo = {
-  name: string;
-  discordServerId: string;
-  accessedRoles: string;
+type StatusInfo = {
+  addresses: string[];
+  guilds: {
+    name: string;
+    url: string;
+    serverId: string;
+    roles: { id: string; name: string }[];
+  }[];
 };
 
 type InviteData = {
@@ -106,7 +110,7 @@ export {
   ActionError,
   CreateRoleResult,
   DiscordChannel,
-  LevelInfo,
+  StatusInfo,
   InviteData,
   NewPoll,
   Poll,
