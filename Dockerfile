@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.3
-FROM node:17.8.0-alpine3.15 AS builder
+FROM node:17.9.0-alpine3.15 AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY ./src ./src
 
 RUN npm ci --quiet && npm run build
 
-FROM node:17.8.0-alpine3.15 AS app
+FROM node:17.9.0-alpine3.15 AS app
 
 ENV NODE_ENV=production
 ENV TZ=Europe/Budapest
