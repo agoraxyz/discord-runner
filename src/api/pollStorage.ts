@@ -1,7 +1,5 @@
 import { NewPoll, SelectMenuOption, RequirementDict } from "./types";
 
-type NewPollRes = Map<string, NewPoll>;
-
 const pollOfUser: Map<string, NewPoll> = new Map();
 const userStep: Map<string, number> = new Map();
 
@@ -9,7 +7,9 @@ const setUserStep = (userId: string, step: number): void => {
   userStep.set(userId, step);
 };
 
-const getUserStep = (userId: string): number => userStep.get(userId);
+const getUserStep = (userId: string): number => {
+  return userStep.get(userId);
+};
 
 const initPoll = (userId: string, channelId: string): void => {
   pollOfUser.set(userId, {
@@ -33,14 +33,17 @@ const saveRoles = (userId: string, roles: SelectMenuOption[]): void => {
 const saveRequirements = (
   userId: string,
   requirements: RequirementDict
-): NewPollRes =>
+): void => {
   pollOfUser.set(userId, { ...pollOfUser.get(userId), requirements });
+};
 
-const saveReqId = (userId: string, requirementId: number): NewPollRes =>
+const saveReqId = (userId: string, requirementId: number): void => {
   pollOfUser.set(userId, { ...pollOfUser.get(userId), requirementId });
+};
 
-const savePollQuestion = (userId: string, question: string): NewPollRes =>
+const savePollQuestion = (userId: string, question: string): void => {
   pollOfUser.set(userId, { ...pollOfUser.get(userId), question });
+};
 
 const savePollOption = (userId: string, option: string): boolean => {
   const poll = pollOfUser.get(userId);
@@ -68,12 +71,15 @@ const savePollReaction = (userId: string, reaction: string): boolean => {
   return true;
 };
 
-const savePollExpDate = (userId: string, expDate: string): NewPollRes =>
+const savePollExpDate = (userId: string, expDate: string): void => {
   pollOfUser.set(userId, { ...pollOfUser.get(userId), expDate });
+};
 
-const getPoll = (userId: string) => pollOfUser.get(userId);
+const getPoll = (userId: string): NewPoll => {
+  return pollOfUser.get(userId);
+};
 
-const deleteMemory = (userId: string) => {
+const deleteMemory = (userId: string): void => {
   userStep.set(userId, 0);
   pollOfUser.delete(userId);
 };
