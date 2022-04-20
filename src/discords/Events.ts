@@ -14,7 +14,6 @@ import {
   Role,
 } from "discord.js";
 import { Discord, Guard, On } from "discordx";
-import utc from "dayjs/plugin/utc";
 import dayjs from "dayjs";
 import axios from "axios";
 import IsDM from "../guards/IsDM";
@@ -25,8 +24,7 @@ import { getGuildsOfServer, userJoined, userRemoved } from "../service";
 import logger from "../utils/logger";
 import pollStorage from "../api/pollStorage";
 import config from "../config";
-import { logAxiosResponse } from "../utils/utils";
-import { UserVote, Vote } from "../api/types";
+import { Vote } from "../api/types";
 import NotDM from "../guards/NotDM";
 import { createPollText } from "../api/polls";
 
@@ -56,8 +54,6 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
           `${config.backendUrl}/poll/${pollId}`
         );
 
-        logAxiosResponse(pollResponse);
-
         const poll = pollResponse.data;
 
         const { reactions, expDate } = poll;
@@ -74,7 +70,7 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
             if (reactions.includes(emojiName)) {
               const optionIndex = reactions.indexOf(emojiName);
 
-              const voteResponse = await axios.post(
+             await axios.post(
                 `${config.backendUrl}/poll/vote`,
                 {
                   platform: config.platform,
@@ -83,8 +79,6 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
                   optionIndex,
                 } as Vote
               );
-
-              logAxiosResponse(voteResponse);
 
               userReactions = msg.reactions.cache.filter(
                 (react) =>
@@ -119,15 +113,11 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
                 } as Vote,
               }
             );
-
-            logAxiosResponse(voteResponse);
           }
 
           const votersResponse = await axios.get(
             `${config.backendUrl}/poll/voters/${pollId}`
           );
-
-          logAxiosResponse(votersResponse);
 
           msg.embeds[0].description = await createPollText(
             poll,

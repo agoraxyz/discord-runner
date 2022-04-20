@@ -13,13 +13,12 @@ import { NewPoll, Poll, UserVote } from "./types";
 import Main from "../Main";
 import logger from "../utils/logger";
 import config from "../config";
-import { logAxiosResponse } from "../utils/utils";
 
 const createPollText = async (
   poll: NewPoll | Poll,
   votersResponse = undefined
 ): Promise<string> => {
-  const { options, reactions } = poll;
+  const { options, reactions, expDate } = poll;
 
   const votesByOption: {
     [k: number]: UserVote[];
@@ -28,12 +27,10 @@ const createPollText = async (
     : Object.fromEntries(options.map((_, idx) => [idx, []]));
 
   const votesForEachOption = options.map((_, idx) =>
-    votesByOption[idx].length
-      ? votesByOption[idx].map((vote) => vote.balance).reduce((a, b) => a + b)
-      : 0
+    votesByOption[idx].map((vote) => vote.balance).reduce((a, b) => a + b, 0)
   );
 
-  const allVotes = votesForEachOption.reduce((a, b) => a + b);
+  const allVotes = votesForEachOption.reduce((a, b) => a + b, 0);
 
   const optionsText = options
     .map((option, idx) => {
@@ -50,14 +47,13 @@ const createPollText = async (
 
   dayjs.extend(utc);
 
-  const dateText = `Poll ends on ${dayjs
-    .unix(Number(poll.expDate))
-    .utc()
-    .format("YYYY-MM-DD HH:mm UTC")}`;
+  const dateText = dayjs().isAfter(dayjs.unix(+expDate))
+    ? "Poll has already ended."
+    : `Poll ends on <t:${expDate}>`;
 
   const numOfVoters = options
     .map((_, idx) => votesByOption[idx].length)
-    .reduce((a, b) => a + b);
+    .reduce((a, b) => a + b, 0);
 
   const votersText = `👥 ${numOfVoters} person${
     numOfVoters === 1 ? "" : "s"
@@ -89,8 +85,6 @@ const createPoll = async (poll: NewPoll): Promise<boolean> => {
       { timeout: 150000 }
     );
 
-    logAxiosResponse(res);
-
     const storedPoll: Poll = res.data;
 
     const embed = new MessageEmbed({
@@ -117,8 +111,6 @@ const endPoll = async (
 ): Promise<void> => {
   const pollResponse = await axios.get(`${config.backendUrl}/poll/${id}`);
 
-  logAxiosResponse(pollResponse);
-
   const poll = pollResponse.data;
 
   if (poll) {
@@ -131,11 +123,9 @@ const endPoll = async (
     if (interaction.user.id === owner.id) {
       poll.ended = true;
 
-      const res = await axios.post(`${config.backendUrl}/poll`, poll, {
+      await axios.post(`${config.backendUrl}/poll`, poll, {
         timeout: 150000,
       });
-
-      logAxiosResponse(res);
 
       interaction.reply({
         content: `Poll #${id} has been closed.`,
@@ -157,8 +147,6 @@ const endPoll = async (
 
 const hasEnded = async (id: string): Promise<boolean> => {
   const pollResponse = await axios.get(`${config.backendUrl}/poll/${id}`);
-
-  logAxiosResponse(pollResponse);
 
   return pollResponse.data.ended;
 };

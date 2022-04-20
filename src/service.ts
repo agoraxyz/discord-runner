@@ -2,7 +2,7 @@ import axios from "axios";
 import { LevelInfo } from "./api/types";
 import config from "./config";
 import logger from "./utils/logger";
-import { logAxiosResponse, logBackendError } from "./utils/utils";
+import { logBackendError } from "./utils/utils";
 
 const API_BASE_URL = config.backendUrl;
 
@@ -18,8 +18,6 @@ const userJoined = async (platformUserId: string, serverId: string) => {
     });
 
     logger.verbose(`joinedPlatform result:`);
-
-    logAxiosResponse(response);
 
     return response.data;
   } catch (error) {
@@ -50,7 +48,6 @@ const statusUpdate = async (
     const response = await axios.post(`${API_BASE_URL}/user/statusUpdate`, {
       discordId: platformUserId,
     });
-    logAxiosResponse(response);
     return response.data;
   } catch (error) {
     logger.verbose("statusUpdate error");
@@ -65,7 +62,6 @@ const getGuildsOfServer = async (serverId: string) => {
     const response = await axios.get(
       `${API_BASE_URL}/guild/platformId/${serverId}`
     );
-    logAxiosResponse(response);
     return [response.data];
   } catch (error) {
     logger.verbose("getGuildsOfServer error");
@@ -79,7 +75,6 @@ const guildStatusUpdate = async (guildId: number): Promise<boolean> => {
     const response = await axios.post(`${API_BASE_URL}/role/statusUpdate`, {
       guildId,
     });
-    logAxiosResponse(response);
     return response.data;
   } catch (error) {
     logger.verbose("guildStatusUpdate error");

@@ -12,7 +12,7 @@ import { join, ping, status } from "../commands";
 import logger from "../utils/logger";
 import { createPoll /* endPoll */ } from "../api/polls";
 import pollStorage from "../api/pollStorage";
-import { createJoinInteractionPayload, logAxiosResponse } from "../utils/utils";
+import { createJoinInteractionPayload } from "../utils/utils";
 import { getGuildsOfServer } from "../service";
 import config from "../config";
 import { RequirementDict } from "../api/types";
@@ -168,8 +168,6 @@ abstract class Slashes {
         `${config.backendUrl}/guild/isAdmin/${dcGuildId}/${userId}`
       );
 
-      logAxiosResponse(isAdminRes);
-
       const isAdmin = isAdminRes.data;
 
       if (isAdmin) {
@@ -177,15 +175,11 @@ abstract class Slashes {
           `${config.backendUrl}/guild/platformId/${dcGuildId}`
         );
 
-        logAxiosResponse(guildIdRes);
-
         const guildId = guildIdRes.data.id;
 
         const guildRes = await axios.get(
           `${config.backendUrl}/guild/${guildId}`
         );
-
-        logAxiosResponse(guildRes);
 
         if (!guildRes) {
           interaction.reply({

@@ -1,10 +1,12 @@
 /* eslint no-underscore-dangle: ["error", { "allowAfterThis": true }] */
+import axios from "axios";
 import { Intents, MessageComponentInteraction } from "discord.js";
 import { Client } from "discordx";
 import api from "./api/api";
 import { InviteData } from "./api/types";
 import config from "./config";
 import logger from "./utils/logger";
+import { logAxiosResponse } from "./utils/utils";
 
 class Main {
   private static _client: Client;
@@ -17,6 +19,9 @@ class Main {
 
   static start(): void {
     api();
+
+    // log all axios responses
+    axios.interceptors.response.use(logAxiosResponse);
 
     this._client = new Client({
       intents: [

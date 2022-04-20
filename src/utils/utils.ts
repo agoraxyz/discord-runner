@@ -76,6 +76,7 @@ const logAxiosResponse = (res: AxiosResponse<any>) => {
   logger.verbose(
     `${res.status} ${res.statusText} data:${JSON.stringify(res.data)}`
   );
+  return res;
 };
 
 const isNumber = (value: any) =>
