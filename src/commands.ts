@@ -31,7 +31,7 @@ const status = async (user: User) => {
         url: "https://cdn.discordapp.com/attachments/950682012866465833/951448318976884826/dc-message.png",
       },
       footer: {
-        text: "Do not share your private keys. We will never ask for your seed phrase.",
+        text: "We NEVER ask you for your seedphrase. NEVER share your private keys.",
       },
     });
 
@@ -40,14 +40,22 @@ const status = async (user: User) => {
         try {
           const guild = await Main.Client.guilds.fetch(li.serverId);
           const member = await guild.members.fetch(user.id);
-          logger.verbose(`${JSON.stringify(member)}`);
           const roleManager = await guild.roles.fetch();
+
           const roleToAdd = roleManager.find((role) =>
-            li.roles.map((r) => r.id).includes(role.id)
+            li.accessedRoles.map((r) => r.id).includes(role.id)
           );
 
           if (roleToAdd) {
             await member.roles.add(roleToAdd);
+          }
+
+          const roleToRemove = roleManager.find((role) =>
+            li.notAccessedRoles.map((r) => r.id).includes(role.id)
+          );
+
+          if (roleToRemove) {
+            await member.roles.remove(roleToRemove);
           }
         } catch (error) {
           logger.verbose(
@@ -57,17 +65,31 @@ const status = async (user: User) => {
       })
     );
 
-    statusInfo.guilds.forEach((li) => {
-      embed.addField(
-        li.name,
-        `${li.roles.map((r) => `✅ ${r.name}`).join("\n")}\n[View guild page](${
-          config.guildUrl
-        }/${li.url})`
-      );
-    });
+    embed.addField(
+      // "🟣 **M E M B E R S H I P S :** 🟣",
+      `<:guild:${config.joinButtonEmojis.emoji2}> **M E M B E R S H I P S :** <:guild:${config.joinButtonEmojis.emoji2}>`,
+      statusInfo.guilds.map((g) => `✅ **${g.name}**`).join("\n")
+    );
 
     embed.addField(
-      "Connected addresses:",
+      // "🟣 **R O L E S :** 🟣",
+      `<:guild:${config.joinButtonEmojis.emoji2}> **R O L E S :** <:guild:${config.joinButtonEmojis.emoji2}>`,
+      statusInfo.guilds
+        .map((g) => {
+          let text = `**${g.name}**\n`;
+          text += g.accessedRoles.map((ar) => `✅ ${ar.name}`).join("\n");
+          if (g.accessedRoles.length && g.notAccessedRoles.length) {
+            text += "\n";
+          }
+          text += g.notAccessedRoles.map((ar) => `❌ ${ar.name}`).join("\n");
+          text += `\n[View guild page](${config.guildUrl}/${g.url})`;
+          return text;
+        })
+        .join("\n")
+    );
+
+    embed.addField(
+      `Connected address${statusInfo.addresses.length > 1 ? "es" : ""}:`,
       statusInfo.addresses.map((a) => `\`${a}\``).join("\n")
     );
 

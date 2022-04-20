@@ -55,7 +55,8 @@ type StatusInfo = {
     name: string;
     url: string;
     serverId: string;
-    roles: { id: string; name: string }[];
+    accessedRoles: { id: string; name: string }[];
+    notAccessedRoles: { id: string; name: string }[];
   }[];
 };
 
