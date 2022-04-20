@@ -54,7 +54,7 @@ abstract class Menus {
       });
     }
 
-    pollStorage.saveReqId(user.id, Number(value));
+    pollStorage.saveReqId(user.id, +value);
     pollStorage.setUserStep(user.id, 1);
 
     await interaction.followUp(

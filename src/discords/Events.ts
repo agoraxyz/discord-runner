@@ -48,7 +48,7 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
     if (result?.length === 1) {
       try {
-        const pollId = Number(result[0]);
+        const pollId = +result[0];
 
         const pollResponse = await axios.get(
           `${config.backendUrl}/poll/${pollId}`
@@ -102,7 +102,7 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
           } else if (reactions.includes(emojiName)) {
             const optionIndex = reactions.indexOf(emojiName);
 
-            const voteResponse = await axios.delete(
+            await axios.delete(
               `${config.backendUrl}/poll/vote`,
               {
                 data: {
