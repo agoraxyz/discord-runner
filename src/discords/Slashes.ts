@@ -323,12 +323,12 @@ abstract class Slashes {
     const userId = interaction.user.id;
 
     if (pollStorage.getUserStep(userId) > 0) {
-      const poll = pollStorage.getPoll(userId);
+      const {channelId, requirements, roles, } = pollStorage.getPoll(userId);
 
       pollStorage.deleteMemory(userId);
-      pollStorage.initPoll(userId, poll.channelId);
-      pollStorage.saveRequirements(userId, poll.requirements);
-      pollStorage.saveRoles(userId, poll.roles);
+      pollStorage.initPoll(userId, channelId);
+      pollStorage.saveRequirements(userId, requirements);
+      pollStorage.saveRoles(userId, roles);
 
       await interaction.reply({
         content: "The current poll creation procedure has been restarted.",
@@ -339,7 +339,7 @@ abstract class Slashes {
         new MessageSelectMenu()
           .setCustomId("role-menu")
           .setPlaceholder("No role selected")
-          .addOptions(poll.roles)
+          .addOptions(roles)
       );
 
       await interaction.user.send({

@@ -63,18 +63,18 @@ const createPollText = async (
 };
 
 const createPoll = async (poll: NewPoll): Promise<boolean> => {
-  const { question, expDate, options, reactions, requirementId } = poll;
+  const { channelId, question, expDate, options, reactions, requirementId } =
+    poll;
 
   try {
-    const channel = Main.Client.channels.cache.get(
-      poll.channelId
-    ) as TextChannel;
+    const channel = Main.Client.channels.cache.get(channelId) as TextChannel;
 
-    const res = await axios.post(
+    await axios.post(
       `${config.backendUrl}/poll`,
       {
         platform: config.platform,
         platformId: channel.guildId,
+        channelId,
         requirementId,
         question,
         startDate: dayjs().unix(),
@@ -84,18 +84,6 @@ const createPoll = async (poll: NewPoll): Promise<boolean> => {
       },
       { timeout: 150000 }
     );
-
-    const storedPoll: Poll = res.data;
-
-    const embed = new MessageEmbed({
-      title: `Poll #${storedPoll.id}: ${question}`,
-      color: `#${config.embedColor}`,
-      description: await createPollText(storedPoll),
-    });
-
-    const msg = await channel.send({ embeds: [embed] });
-
-    poll.reactions.map(async (emoji) => await (msg as Message).react(emoji));
 
     return true;
   } catch (e) {
