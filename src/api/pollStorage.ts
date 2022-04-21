@@ -7,9 +7,7 @@ const setUserStep = (userId: string, step: number): void => {
   userStep.set(userId, step);
 };
 
-const getUserStep = (userId: string): number => {
-  return userStep.get(userId);
-};
+const getUserStep = (userId: string): number => userStep.get(userId);
 
 const initPoll = (userId: string, channelId: string): void => {
   pollOfUser.set(userId, {
@@ -75,9 +73,7 @@ const savePollExpDate = (userId: string, expDate: string): void => {
   pollOfUser.set(userId, { ...pollOfUser.get(userId), expDate });
 };
 
-const getPoll = (userId: string): NewPoll => {
-  return pollOfUser.get(userId);
-};
+const getPoll = (userId: string): NewPoll => pollOfUser.get(userId);
 
 const deleteMemory = (userId: string): void => {
   userStep.set(userId, 0);

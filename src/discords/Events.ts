@@ -70,15 +70,12 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
             if (reactions.includes(emojiName)) {
               const optionIndex = reactions.indexOf(emojiName);
 
-             await axios.post(
-                `${config.backendUrl}/poll/vote`,
-                {
-                  platform: config.platform,
-                  pollId,
-                  platformUserId: user.id,
-                  optionIndex,
-                } as Vote
-              );
+              await axios.post(`${config.backendUrl}/poll/vote`, {
+                platform: config.platform,
+                pollId,
+                platformUserId: user.id,
+                optionIndex,
+              } as Vote);
 
               userReactions = msg.reactions.cache.filter(
                 (react) =>
@@ -102,17 +99,14 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
           } else if (reactions.includes(emojiName)) {
             const optionIndex = reactions.indexOf(emojiName);
 
-            await axios.delete(
-              `${config.backendUrl}/poll/vote`,
-              {
-                data: {
-                  platform: config.platform,
-                  pollId,
-                  platformUserId: user.id,
-                  optionIndex,
-                } as Vote,
-              }
-            );
+            await axios.delete(`${config.backendUrl}/poll/vote`, {
+              data: {
+                platform: config.platform,
+                pollId,
+                platformUserId: user.id,
+                optionIndex,
+              } as Vote,
+            });
           }
 
           const votersResponse = await axios.get(
