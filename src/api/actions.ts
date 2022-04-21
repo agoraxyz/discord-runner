@@ -1,3 +1,5 @@
+/* eslint no-return-await: "off" */
+
 import {
   GuildMember,
   PartialGuildMember,

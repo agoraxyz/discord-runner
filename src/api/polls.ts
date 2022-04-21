@@ -1,11 +1,6 @@
 /* eslint no-return-await: "off" */
 
-import {
-  CommandInteraction,
-  Message,
-  MessageEmbed,
-  TextChannel,
-} from "discord.js";
+import { CommandInteraction, TextChannel } from "discord.js";
 import axios from "axios";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";

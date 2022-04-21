@@ -323,7 +323,7 @@ abstract class Slashes {
     const userId = interaction.user.id;
 
     if (pollStorage.getUserStep(userId) > 0) {
-      const {channelId, requirements, roles, } = pollStorage.getPoll(userId);
+      const { channelId, requirements, roles } = pollStorage.getPoll(userId);
 
       pollStorage.deleteMemory(userId);
       pollStorage.initPoll(userId, channelId);
