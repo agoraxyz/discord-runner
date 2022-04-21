@@ -32,7 +32,7 @@ abstract class Slashes {
     );
 
     await interaction.reply({
-      content: `I'll update your community accesses as soon as possible. (It could take up to 2 minutes.)`,
+      content: `I'll update your Guild accesses as soon as possible. (It could take up to 2 minutes.)`,
       ephemeral: true,
     });
 

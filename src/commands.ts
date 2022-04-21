@@ -39,7 +39,7 @@ const status = async (user: User) => {
 
     const embed = new MessageEmbed({
       author: {
-        name: `${user.username}'s communities and levels`,
+        name: `${user.username}'s Guilds`,
         iconURL: `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`,
       },
       color: `#${config.embedColor}`,
@@ -52,7 +52,7 @@ const status = async (user: User) => {
   }
 
   return new MessageEmbed({
-    title: "It seems you haven't joined any communities yet.",
+    title: "It seems you haven't joined any guilds yet.",
     color: `#${config.embedColor}`,
     description:
       "You can find more information on [agora.xyz](https://agora.xyz) or on [guild.xyz](https://guild.xyz).",
