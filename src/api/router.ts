@@ -104,10 +104,10 @@ const createRouter = () => {
     controller.isIn
   );
 
-  router.get(
-    "/channels/:guildId",
+  router.post(
+    "/server/:guildId",
     validators.paramDiscordId("guildId"),
-    controller.channels
+    controller.server
   );
 
   router.post(
