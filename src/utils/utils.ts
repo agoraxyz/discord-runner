@@ -225,6 +225,76 @@ const denyViewEntryChannelForRole = async (
   }
 };
 
+const getChannelsByCategoryWithRoles = (guild: Guild) => {
+  // get the roles that can view channels
+  const defaultRoles = guild.roles.cache
+    .filter(
+      (r) =>
+        !r.permissions.has("ADMINISTRATOR") && r.permissions.has("VIEW_CHANNEL")
+    )
+    .map((r) => r.id);
+
+  // sort channels by categoryId
+  const channelsByCategoryId = guild.channels.cache.reduce<
+    Map<string, { id: string; name: string; roles: string[] }[]>
+  >((acc, ch) => {
+    // skip if not text or news channel
+    if (ch.type !== "GUILD_TEXT" && ch.type !== "GUILD_NEWS") {
+      return acc;
+    }
+
+    // handle where threre is not parent
+    const parentId = ch.parent?.id || "-";
+
+    // create parentId key if not exists
+    if (!acc.has(parentId)) {
+      acc.set(parentId, []);
+    }
+
+    // update viewer roles according to permission overwrites
+    let roles: Set<string>;
+    if (
+      ch.permissionOverwrites.cache
+        .get(guild.roles.everyone.id)
+        ?.deny?.has("VIEW_CHANNEL")
+    ) {
+      roles = new Set();
+    } else {
+      roles = new Set(defaultRoles);
+    }
+    ch.permissionOverwrites.cache.forEach((po) => {
+      if (po.type === "role") {
+        if (po.allow.has("VIEW_CHANNEL")) {
+          roles.add(po.id);
+        }
+        if (po.deny.has("VIEW_CHANNEL")) {
+          roles.delete(po.id);
+        }
+      }
+    });
+
+    // add channel info to the category's array
+    acc.get(parentId).push({
+      id: ch.id,
+      name: ch.name,
+      roles: [...roles],
+    });
+    return acc;
+  }, new Map());
+
+  // add categoryName and convert to array
+  const channelsByCategory = [];
+  channelsByCategoryId.forEach((v, k) => {
+    channelsByCategory.push({
+      id: k,
+      name: k === "-" ? "-" : guild.channels.cache.get(k).name,
+      channels: v,
+    });
+  });
+
+  return channelsByCategory;
+};
+
 export {
   getUserResult,
   getErrorResult,
@@ -235,4 +305,5 @@ export {
   getJoinReplyMessage,
   getAccessedChannelsByRoles,
   denyViewEntryChannelForRole,
+  getChannelsByCategoryWithRoles,
 };
