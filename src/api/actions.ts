@@ -13,6 +13,7 @@ import {
   Collection,
   TextChannel,
   Message,
+  PermissionOverwrites,
 } from "discord.js";
 import axios from "axios";
 import Main from "../Main";
@@ -135,7 +136,7 @@ const manageRoles = async (
     } else {
       updatedMember = await member.roles.remove(roleId);
       const embed = new MessageEmbed({
-        title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements or just left it.`,
+        title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements, disconnected your Discord account or just left it.`,
         color: `#${config.embedColor}`,
       });
       try {
@@ -151,7 +152,7 @@ const manageRoles = async (
       }
     }
 
-    if (isUpgrade && !redisValue) {
+    if (isUpgrade) {
       try {
         await notifyAccessedChannels(updatedMember, roleId, message);
       } catch (error) {
@@ -192,11 +193,36 @@ const generateInvite = async (
       code: invite.code,
     };
   }
-  const newInvite = await guild.invites.create(inviteChannelId, { maxAge: 0 });
+
+  let channelId: string;
+  if (guild.channels.cache.find((c) => c.id === inviteChannelId)) {
+    channelId = inviteChannelId;
+  } else {
+    logger.warn(
+      `Invite channel ${inviteChannelId} does not exist in server ${guildId}`
+    );
+
+    const publicChannel = guild.channels.cache.find(
+      (c) =>
+        c.isText() &&
+        !(c as any).permissionOverwrites?.cache.some(
+          (po: PermissionOverwrites) =>
+            po.id === guild.roles.everyone.id && po.deny.any("VIEW_CHANNEL")
+        )
+    );
+    if (publicChannel) {
+      channelId = publicChannel.id;
+    } else {
+      logger.warn(`Cannot find public channel in ${guildId}`);
+      channelId = guild.channels.cache.find((c) => c.isText())?.id;
+    }
+  }
+
+  const newInvite = await guild.invites.create(channelId, { maxAge: 0 });
   logger.verbose(`generated invite code: ${newInvite?.code}`);
   Main.inviteDataCache.set(guildId, {
     code: newInvite.code,
-    inviteChannelId,
+    inviteChannelId: channelId,
   });
   return {
     code: newInvite.code,
@@ -480,7 +506,7 @@ const manageMigratedActions = async (
       if (!userIds.includes(m.id)) {
         await m.roles.remove(roleId);
         const embed = new MessageEmbed({
-          title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements or just left it.`,
+          title: `You no longer have access to the \`${message}\` role in \`${guild.name}\`, because you have not fulfilled the requirements, disconnected your Discord account or just left it.`,
           color: `#${config.embedColor}`,
         });
         try {
