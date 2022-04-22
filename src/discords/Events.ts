@@ -3,15 +3,18 @@
 /* eslint no-underscore-dangle: "off" */
 
 import {
-  ClientUser,
+  Collection,
   GuildMember,
   Invite,
   Message,
   MessageEmbed,
+  MessageReaction,
   PartialGuildMember,
+  PartialMessageReaction,
+  PartialUser,
   RateLimitData,
-  ReactionEmoji,
   Role,
+  User,
 } from "discord.js";
 import { Discord, Guard, On } from "discordx";
 import dayjs from "dayjs";
@@ -28,7 +31,11 @@ import { Vote } from "../api/types";
 import NotDM from "../guards/NotDM";
 import { createPollText } from "../api/polls";
 
-const messageReactionCommon = async (reaction, user, removed: boolean) => {
+const messageReactionCommon = async (
+  reaction: MessageReaction | PartialMessageReaction,
+  user: User | PartialUser,
+  removed: boolean
+) => {
   if (!user.bot) {
     if (reaction.partial) {
       try {
@@ -59,13 +66,13 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
         const { reactions, expDate } = poll;
 
         if (dayjs().isBefore(dayjs.unix(expDate))) {
-          const emoji = reaction._emoji;
+          const {emoji} = reaction;
           const emojiName = emoji.id
             ? `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.id}>`
             : emoji.name;
 
           if (!removed) {
-            let userReactions: ReactionEmoji[];
+            let userReactions: Collection<string, MessageReaction>;
 
             if (reactions.includes(emojiName)) {
               const optionIndex = reactions.indexOf(emojiName);
@@ -79,19 +86,19 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
 
               userReactions = msg.reactions.cache.filter(
                 (react) =>
-                  react.users.cache.has(user.id) && react._emoji !== emoji
+                  react.users.cache.has(user.id) && react.emoji !== emoji
               );
             } else {
               userReactions = msg.reactions.cache.filter(
                 (react) =>
-                  react.users.cache.has(user.id) && react._emoji === emoji
+                  react.users.cache.has(user.id) && react.emoji === emoji
               );
             }
 
             try {
               Array.from(userReactions.values()).map(
                 async (react) =>
-                  await msg.reactions.resolve(react).users.remove(user)
+                  await msg.reactions.resolve(react).users.remove(user.id)
               );
             } catch (error) {
               logger.error("Failed to remove reaction:", error);
@@ -109,14 +116,11 @@ const messageReactionCommon = async (reaction, user, removed: boolean) => {
             });
           }
 
-          const votersResponse = await axios.get(
-            `${config.backendUrl}/poll/voters/${pollId}`
+          const results = await axios.get(
+            `${config.backendUrl}/poll/results/${pollId}`
           );
 
-          msg.embeds[0].description = await createPollText(
-            poll,
-            votersResponse
-          );
+          msg.embeds[0].description = await createPollText(poll, results);
 
           msg.edit({ embeds: [msg.embeds[0]] });
         } else {
@@ -301,12 +305,18 @@ abstract class Events {
   }
 
   @On("messageReactionAdd")
-  onMessageReactionAdd([reaction, user]: [ReactionEmoji, ClientUser]): void {
+  onMessageReactionAdd([reaction, user]: [
+    reaction: MessageReaction | PartialMessageReaction,
+    user: User | PartialUser
+  ]): void {
     messageReactionCommon(reaction, user, false);
   }
 
   @On("messageReactionRemove")
-  onMessageReactionRemove([reaction, user]: [ReactionEmoji, ClientUser]): void {
+  onMessageReactionRemove([reaction, user]: [
+    reaction: MessageReaction | PartialMessageReaction,
+    user: User | PartialUser
+  ]): void {
     messageReactionCommon(reaction, user, true);
   }
 

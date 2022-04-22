@@ -101,12 +101,6 @@ type Vote = {
   optionIndex: number;
 };
 
-type UserVote = {
-  tgId: string;
-  dcId: string;
-  balance: number;
-};
-
 export {
   ManageRolesParams,
   CreateChannelParams,
@@ -125,5 +119,4 @@ export {
   Poll,
   Reaction,
   Vote,
-  UserVote,
 };
