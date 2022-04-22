@@ -66,22 +66,20 @@ const status = async (user: User) => {
     );
 
     embed.addField(
-      // "🟣 **M E M B E R S H I P S :** 🟣",
-      `<:guild:${config.joinButtonEmojis.emoji2}> **M E M B E R S H I P S :** <:guild:${config.joinButtonEmojis.emoji2}>`,
-      statusInfo.guilds.map((g) => `✅ **${g.name}**`).join("\n")
-    );
-
-    embed.addField(
       // "🟣 **R O L E S :** 🟣",
       `<:guild:${config.joinButtonEmojis.emoji2}> **R O L E S :** <:guild:${config.joinButtonEmojis.emoji2}>`,
       statusInfo.guilds
         .map((g) => {
           let text = `**${g.name}**\n`;
-          text += g.accessedRoles.map((ar) => `✅ ${ar.name}`).join("\n");
+          text += g.accessedRoles
+            .map((ar) => `<:yes:966796148121673748> ${ar.name}`)
+            .join("\n");
           if (g.accessedRoles.length && g.notAccessedRoles.length) {
             text += "\n";
           }
-          text += g.notAccessedRoles.map((ar) => `❌ ${ar.name}`).join("\n");
+          text += g.notAccessedRoles
+            .map((ar) => `<:no:966796161056931850> ${ar.name}`)
+            .join("\n");
           text += `\n[View guild page](${config.guildUrl}/${g.url})`;
           return text;
         })
