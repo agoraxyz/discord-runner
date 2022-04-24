@@ -12,7 +12,7 @@ import { join, ping, status } from "../commands";
 import logger from "../utils/logger";
 import { createPoll /* endPoll */ } from "../api/polls";
 import pollStorage from "../api/pollStorage";
-import { createJoinInteractionPayload, logAxiosResponse } from "../utils/utils";
+import { createJoinInteractionPayload } from "../utils/utils";
 import { getGuildsOfServer } from "../service";
 import config from "../config";
 import { RequirementDict } from "../api/types";
