@@ -66,7 +66,7 @@ const messageReactionCommon = async (
         const { reactions, expDate } = poll;
 
         if (dayjs().isBefore(dayjs.unix(expDate))) {
-          const {emoji} = reaction;
+          const { emoji } = reaction;
           const emojiName = emoji.id
             ? `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.id}>`
             : emoji.name;
