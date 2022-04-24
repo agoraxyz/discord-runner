@@ -12,7 +12,7 @@ import { join, ping, status } from "../commands";
 import logger from "../utils/logger";
 import { createPoll /* endPoll */ } from "../api/polls";
 import pollStorage from "../api/pollStorage";
-import { createJoinInteractionPayload } from "../utils/utils";
+import { createJoinInteractionPayload, logAxiosResponse } from "../utils/utils";
 import { getGuildsOfServer } from "../service";
 import config from "../config";
 import { RequirementDict } from "../api/types";
@@ -168,9 +168,7 @@ abstract class Slashes {
         `${config.backendUrl}/guild/isAdmin/${dcGuildId}/${userId}`
       );
 
-      const isAdmin = isAdminRes.data;
-
-      if (isAdmin) {
+      if (isAdminRes?.data) {
         const guildIdRes = await axios.get(
           `${config.backendUrl}/guild/platformId/${dcGuildId}`
         );

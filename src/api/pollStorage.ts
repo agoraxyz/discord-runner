@@ -43,6 +43,18 @@ const savePollQuestion = (userId: string, question: string): void => {
   pollOfUser.set(userId, { ...pollOfUser.get(userId), question });
 };
 
+const saveRequirements = (
+  userId: string,
+  requirements: RequirementDict
+): NewPollRes =>
+  pollOfUser.set(userId, { ...pollOfUser.get(userId), requirements });
+
+const saveReqId = (userId: string, requirementId: number): NewPollRes =>
+  pollOfUser.set(userId, { ...pollOfUser.get(userId), requirementId });
+
+const savePollQuestion = (userId: string, question: string): NewPollRes =>
+  pollOfUser.set(userId, { ...pollOfUser.get(userId), question });
+
 const savePollOption = (userId: string, option: string): boolean => {
   const poll = pollOfUser.get(userId);
 

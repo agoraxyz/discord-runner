@@ -4,7 +4,7 @@ import { CommandInteraction, TextChannel } from "discord.js";
 import axios from "axios";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { NewPoll, Poll } from "./types";
+import { NewPoll, Poll, UserVote } from "./types";
 import Main from "../Main";
 import logger from "../utils/logger";
 import config from "../config";
@@ -36,6 +36,57 @@ const createPollText = async (
   const dateText = dayjs().isAfter(dayjs.unix(+expDate))
     ? "Poll has already ended."
     : `Poll ends on <t:${expDate}>`;
+
+  const votersText = `👥 ${numOfVoters} person${
+    numOfVoters === 1 ? "" : "s"
+  } voted so far.`;
+
+  return `${optionsText}\n\n${dateText}\n\n${votersText}`;
+};
+
+const createPollText = async (
+  poll: NewPoll | Poll,
+  votersResponse = undefined
+): Promise<string> => {
+  const { options, reactions } = poll;
+
+  const votesByOption: {
+    [k: number]: UserVote[];
+  } = votersResponse
+    ? votersResponse.data
+    : Object.fromEntries(options.map((_, idx) => [idx, []]));
+
+  const votesForEachOption = options.map((_, idx) =>
+    votesByOption[idx].length
+      ? votesByOption[idx].map((vote) => vote.balance).reduce((a, b) => a + b)
+      : 0
+  );
+
+  const allVotes = votesForEachOption.reduce((a, b) => a + b);
+
+  const optionsText = options
+    .map((option, idx) => {
+      const perc =
+        votesByOption[idx].length > 0
+          ? (votesForEachOption[idx] / allVotes) * 100
+          : 0;
+
+      return `${reactions[idx]} ${option}\n▫️${
+        Number.isInteger(perc) ? perc : perc.toFixed(2)
+      }%`;
+    })
+    .join("\n\n");
+
+  dayjs.extend(utc);
+
+  const dateText = `Poll ends on ${dayjs
+    .unix(Number(poll.expDate))
+    .utc()
+    .format("YYYY-MM-DD HH:mm UTC")}`;
+
+  const numOfVoters = options
+    .map((_, idx) => votesByOption[idx].length)
+    .reduce((a, b) => a + b);
 
   const votersText = `👥 ${numOfVoters} person${
     numOfVoters === 1 ? "" : "s"
