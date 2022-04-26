@@ -91,12 +91,12 @@ const createJoinInteractionPayload = (
   },
   title: string = "Verify your wallet",
   messageText: string = null,
-  buttonText: string = `Join ${guild?.name || "Guild"}`
+  buttonText?: string
 ) => {
   const joinButton = new MessageButton({
     customId: "join-button",
-    label: buttonText,
-    emoji: "🔗",
+    label: buttonText || `Join ${guild?.name || "Guild"}`,
+    emoji: buttonText ? undefined : "🔗",
     style: "PRIMARY",
   });
   const guideButton = new MessageButton({

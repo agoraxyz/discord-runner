@@ -19,6 +19,7 @@ import {
   DeleteChannelAndRoleParams,
   InviteResult,
   ManageRolesParams,
+  SendJoinMeta,
   UserResult,
 } from "./types";
 import {
@@ -460,7 +461,11 @@ const getRole = async (guildId: string, roleId: string) => {
   return { serverName: guild.name, roleName: role.name };
 };
 
-const sendJoinButton = async (guildId: string, channelId: string) => {
+const sendJoinButton = async (
+  guildId: string,
+  channelId: string,
+  meta: Partial<SendJoinMeta>
+) => {
   const guild = await Main.Client.guilds.fetch(guildId);
   const channel = guild.channels.cache.find((c) => c.id === channelId);
 
@@ -469,7 +474,12 @@ const sendJoinButton = async (guildId: string, channelId: string) => {
   }
 
   const guilds = await getGuildsOfServer(guildId);
-  const payload = createJoinInteractionPayload(guilds[0]);
+  const payload = createJoinInteractionPayload(
+    guilds[0],
+    meta.title,
+    meta.description,
+    meta.button
+  );
 
   const message = await channel.send(payload);
   await message.react(config.joinButtonEmojis.emoji1);

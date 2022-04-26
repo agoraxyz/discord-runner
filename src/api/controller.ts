@@ -325,8 +325,8 @@ const controller = {
       return;
     }
     try {
-      const { guildId, channelId } = req.body;
-      const result = await sendJoinButton(guildId, channelId);
+      const { guildId, channelId, ...sendJoinMeta } = req.body;
+      const result = await sendJoinButton(guildId, channelId, sendJoinMeta);
       res.status(200).json(result);
     } catch (error) {
       const errorMsg = getErrorResult(error);

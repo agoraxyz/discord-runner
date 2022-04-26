@@ -60,7 +60,14 @@ type InviteData = {
   inviteChannelId: string;
 };
 
+type SendJoinMeta = {
+  title: string;
+  description: string;
+  button: string;
+};
+
 export {
+  SendJoinMeta,
   ManageRolesParams,
   CreateChannelParams,
   DeleteChannelAndRoleParams,

@@ -114,6 +114,7 @@ const createRouter = () => {
     "/channels/sendJoin",
     validators.bodyDiscordId("guildId"),
     validators.bodyDiscordId("channelId"),
+    ...validators.sendJoinMeta,
     controller.sendJoinButtonToChannel
   );
 
