@@ -35,4 +35,7 @@ export default {
     body("description").trim().optional().isLength({ min: 1 }),
     body("button").trim().optional().isLength({ min: 1 }),
   ],
+  gatedChannelsValidator: body("gatedChannels.*")
+    .optional()
+    .isLength({ min: 1 }),
 };
