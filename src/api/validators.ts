@@ -30,4 +30,7 @@ export default {
   entryChannelIdValidator: body("entryChannelId")
     .optional()
     .isLength({ min: 1 }),
+  gatedChannelsValidator: body("gatedChannels.*")
+    .optional()
+    .isLength({ min: 1 }),
 };

@@ -81,6 +81,7 @@ const createRouter = () => {
     validators.roleNameValidator,
     validators.isGuardedValidator,
     validators.entryChannelIdValidator,
+    validators.gatedChannelsValidator,
     controller.updateRole
   );
 

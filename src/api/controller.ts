@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
-import { getErrorResult } from "../utils/utils";
+import { getErrorResult, updateAccessedChannelsOfRole } from "../utils/utils";
 import {
   createChannel,
   createRole,
@@ -147,13 +147,22 @@ const controller = {
       return;
     }
 
-    const { serverId, roleId, roleName, isGuarded, entryChannelId } = req.body;
+    const {
+      serverId,
+      roleId,
+      roleName,
+      isGuarded,
+      entryChannelId,
+      gatedChannels,
+    } = req.body;
     updateRoleName(serverId, roleId, roleName, isGuarded, entryChannelId)
       .then(() => res.status(200).send())
       .catch((error) => {
         const errorMsg = getErrorResult(error);
         res.status(400).json(errorMsg);
       });
+
+    updateAccessedChannelsOfRole(serverId, roleId, gatedChannels);
   },
 
   deleteRole: async (req: Request, res: Response): Promise<void> => {

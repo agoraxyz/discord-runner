@@ -14,6 +14,7 @@ import {
 } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
+import Main from "../Main";
 import { getGuildsOfServer } from "../service";
 import logger from "./logger";
 
@@ -295,6 +296,39 @@ const getChannelsByCategoryWithRoles = (guild: Guild) => {
   return channelsByCategory;
 };
 
+const updateAccessedChannelsOfRole = (
+  serverId: string,
+  roleId: string,
+  channelIds: string[]
+) => {
+  const shouldHaveAccess = new Set(channelIds);
+
+  const channels = Main.Client.guilds.cache
+    .get(serverId)
+    ?.channels.cache.filter((channel) => !channel.isThread()) as Collection<
+    string,
+    GuildChannel
+  >;
+
+  const [channelsToAllow, channelsToDeny] = channels.partition(
+    (channel) =>
+      shouldHaveAccess.has(channel.id) || shouldHaveAccess.has(channel.parentId)
+  );
+
+  return Promise.all([
+    ...channelsToDeny.map((channelToDenyAccessTo) =>
+      channelToDenyAccessTo.permissionOverwrites.create(roleId, {
+        VIEW_CHANNEL: false,
+      })
+    ),
+    ...channelsToAllow.map((channelToAllowAccessTo) =>
+      channelToAllowAccessTo.permissionOverwrites.create(roleId, {
+        VIEW_CHANNEL: true,
+      })
+    ),
+  ]);
+};
+
 export {
   getUserResult,
   getErrorResult,
@@ -306,4 +340,5 @@ export {
   getAccessedChannelsByRoles,
   denyViewEntryChannelForRole,
   getChannelsByCategoryWithRoles,
+  updateAccessedChannelsOfRole,
 };
