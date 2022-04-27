@@ -60,11 +60,11 @@ type InviteData = {
   inviteChannelId: string;
 };
 
-type SendJoinMeta = {
+type SendJoinMeta = Partial<{
   title: string;
   description: string;
   button: string;
-};
+}>;
 
 export {
   SendJoinMeta,

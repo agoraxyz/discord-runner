@@ -96,7 +96,7 @@ const createJoinInteractionPayload = (
   const joinButton = new MessageButton({
     customId: "join-button",
     label: buttonText || `Join ${guild?.name || "Guild"}`,
-    emoji: buttonText ? undefined : "🔗",
+    emoji: "🔗",
     style: "PRIMARY",
   });
   const guideButton = new MessageButton({

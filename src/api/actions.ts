@@ -464,7 +464,7 @@ const getRole = async (guildId: string, roleId: string) => {
 const sendJoinButton = async (
   guildId: string,
   channelId: string,
-  meta: Partial<SendJoinMeta>
+  meta?: SendJoinMeta
 ) => {
   const guild = await Main.Client.guilds.fetch(guildId);
   const channel = guild.channels.cache.find((c) => c.id === channelId);
@@ -476,9 +476,9 @@ const sendJoinButton = async (
   const guilds = await getGuildsOfServer(guildId);
   const payload = createJoinInteractionPayload(
     guilds[0],
-    meta.title,
-    meta.description,
-    meta.button
+    meta?.title,
+    meta?.description,
+    meta?.button
   );
 
   const message = await channel.send(payload);
