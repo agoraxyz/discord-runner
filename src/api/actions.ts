@@ -385,14 +385,26 @@ const getServerInfo = async (guildId: string, includeDetails: boolean) => {
       };
     }
 
+    const roles: Collection<string, Role> = guild?.roles.cache.filter(
+      (r) => r.id !== guild.roles.everyone.id
+    );
+
+    const channels = guild?.channels.cache
+      .filter(
+        (c) =>
+          c.type === "GUILD_TEXT" &&
+          c
+            .permissionsFor(guild.roles.everyone)
+            .has(Permissions.FLAGS.VIEW_CHANNEL)
+      )
+      .map((c) => ({
+        id: c?.id,
+        name: c?.name,
+      }));
+
     let categories: any[];
-    let roles: Collection<string, Role>;
     if (includeDetails) {
       categories = getChannelsByCategoryWithRoles(guild);
-
-      roles = guild?.roles.cache.filter(
-        (r) => r.id !== guild.roles.everyone.id
-      );
     }
 
     const membersWithoutRole = guild.members.cache.reduce(
@@ -409,6 +421,7 @@ const getServerInfo = async (guildId: string, includeDetails: boolean) => {
       roles,
       isAdmin: true,
       membersWithoutRole,
+      channels,
     };
   } catch (error) {
     return {
