@@ -122,7 +122,7 @@ const controller = {
       });
   },
 
-  createRole: (req: Request, res: Response): void => {
+  createRole: async (req: Request, res: Response): Promise<void> => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -130,16 +130,27 @@ const controller = {
       return;
     }
 
-    const { serverId, roleName, isGuarded, entryChannelId } = req.body;
-    createRole(serverId, roleName, isGuarded, entryChannelId)
-      .then((result) => res.status(201).json(result))
-      .catch((error) => {
-        const errorMsg = getErrorResult(error);
-        res.status(400).json(errorMsg);
-      });
+    try {
+      const { serverId, roleName, isGuarded, entryChannelId, gatedChannels } =
+        req.body;
+
+      const roleId = await createRole(
+        serverId,
+        roleName,
+        isGuarded,
+        entryChannelId
+      );
+
+      await updateAccessedChannelsOfRole(serverId, roleId, gatedChannels);
+
+      res.status(201).json(roleId);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
   },
 
-  updateRole: (req: Request, res: Response): void => {
+  updateRole: async (req: Request, res: Response): Promise<void> => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -147,22 +158,31 @@ const controller = {
       return;
     }
 
-    const {
-      serverId,
-      roleId,
-      roleName,
-      isGuarded,
-      entryChannelId,
-      gatedChannels,
-    } = req.body;
-    updateRoleName(serverId, roleId, roleName, isGuarded, entryChannelId)
-      .then(() => res.status(200).send())
-      .catch((error) => {
-        const errorMsg = getErrorResult(error);
-        res.status(400).json(errorMsg);
-      });
+    try {
+      const {
+        serverId,
+        roleId,
+        roleName,
+        isGuarded,
+        entryChannelId,
+        gatedChannels,
+      } = req.body;
 
-    updateAccessedChannelsOfRole(serverId, roleId, gatedChannels);
+      await updateRoleName(
+        serverId,
+        roleId,
+        roleName,
+        isGuarded,
+        entryChannelId
+      );
+
+      await updateAccessedChannelsOfRole(serverId, roleId, gatedChannels);
+
+      res.status(200).send();
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
   },
 
   deleteRole: async (req: Request, res: Response): Promise<void> => {
