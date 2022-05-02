@@ -389,10 +389,17 @@ const controller = {
       return;
     }
     try {
-      const { guildId, platformUserIds, roleId, message } = req.body;
+      const {
+        guildId,
+        upgradeableUserIds,
+        downgradeableUserIds,
+        roleId,
+        message,
+      } = req.body;
       const result = await manageMigratedActions(
         guildId,
-        platformUserIds,
+        upgradeableUserIds,
+        downgradeableUserIds,
         roleId,
         message
       );
