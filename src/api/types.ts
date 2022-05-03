@@ -60,6 +60,46 @@ type InviteData = {
   inviteChannelId: string;
 };
 
+type SelectMenuOption = {
+  label: string;
+  description: string;
+  value: string;
+};
+
+type RequirementDict = { [k: string]: SelectMenuOption[] };
+
+type NewPoll = {
+  roles: SelectMenuOption[];
+  requirements: RequirementDict;
+  requirementId: number;
+  channelId: string;
+  question: string;
+  options: string[];
+  reactions: string[];
+  expDate: string;
+};
+
+type Poll = {
+  id: number;
+  question: string;
+  startDate: number;
+  expDate: number;
+  options: string[];
+  reactions: string[];
+  roleId: number;
+};
+
+type Reaction = {
+  name: string;
+  users: string[];
+};
+
+type Vote = {
+  platform: "DISCORD" | "TELEGRAM";
+  pollId: number;
+  platformUserId: string;
+  optionIndex: number;
+};
 type SendJoinMeta = Partial<{
   title: string;
   description: string;
@@ -79,4 +119,10 @@ export {
   DiscordChannel,
   LevelInfo,
   InviteData,
+  SelectMenuOption,
+  RequirementDict,
+  NewPoll,
+  Poll,
+  Reaction,
+  Vote,
 };

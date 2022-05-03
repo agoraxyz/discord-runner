@@ -153,6 +153,18 @@ const createRouter = () => {
     controller.getMembersByRole
   );
 
+  router.post(
+    "/poll",
+    [
+      validators.bodyNumberIdValidator("id"),
+      validators.bodyIdValidator("platformId"),
+      validators.bodyStringValidator("question"),
+      validators.bodyIdValidator("expDate"),
+      validators.bodyArrayValidator("options"),
+    ],
+    controller.createPoll
+  );
+
   return router;
 };
 

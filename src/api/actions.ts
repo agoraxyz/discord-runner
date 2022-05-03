@@ -1,3 +1,5 @@
+/* eslint no-return-await: "off" */
+
 import {
   GuildMember,
   PartialGuildMember,
@@ -9,6 +11,8 @@ import {
   ThreadChannel,
   OverwriteResolvable,
   Collection,
+  TextChannel,
+  Message,
   PermissionOverwrites,
 } from "discord.js";
 import axios from "axios";
@@ -19,6 +23,7 @@ import {
   DeleteChannelAndRoleParams,
   InviteResult,
   ManageRolesParams,
+  Poll,
   SendJoinMeta,
   UserResult,
 } from "./types";
@@ -34,6 +39,7 @@ import {
 import config from "../config";
 import { getGuildsOfServer } from "../service";
 import redisClient from "../database";
+import { createPollText } from "./polls";
 
 const DiscordServerNames: { [guildId: string]: [name: string] } = {};
 
@@ -676,6 +682,27 @@ const getMembersByRoleId = async (serverId: string, roleId: string) => {
   return [...role.members.keys()];
 };
 
+const sendPollMessage = async (
+  channelId: string,
+  poll: Poll
+): Promise<number> => {
+  const { id, question } = poll;
+
+  const channel = (await Main.Client.channels.fetch(channelId)) as TextChannel;
+
+  const embed = new MessageEmbed({
+    title: `Poll #${id}: ${question}`,
+    color: `#${config.embedColor}`,
+    description: await createPollText(poll),
+  });
+
+  const msg = await channel.send({ embeds: [embed] });
+
+  poll.reactions.map(async (emoji) => await (msg as Message).react(emoji));
+
+  return +msg.id;
+};
+
 export {
   getMembersByRoleId,
   manageRoles,
@@ -696,4 +723,5 @@ export {
   sendJoinButton,
   getUser,
   setupGuildGuard,
+  sendPollMessage,
 };

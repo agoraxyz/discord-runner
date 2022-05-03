@@ -21,6 +21,7 @@ import {
   manageMigratedActions,
   setupGuildGuard,
   getMembersByRoleId,
+  sendPollMessage,
 } from "./actions";
 import {
   CreateChannelParams,
@@ -425,6 +426,23 @@ const controller = {
     } catch (error) {
       const errorMsg = getErrorResult(error);
       res.status(400).json(errorMsg);
+    }
+  },
+
+  createPoll: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+
+    try {
+      const msgId = await sendPollMessage(req.body.channelId, req.body);
+
+      res.status(200).json(msgId);
+    } catch (err) {
+      res.status(400).json(getErrorResult(err));
     }
   },
 };

@@ -44,6 +44,7 @@ export default {
   discordToken,
   backendUrl,
   api,
+  platform: "DISCORD",
   embedColor,
   guildUrl,
   joinButtonEmojis,

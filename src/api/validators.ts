@@ -1,14 +1,28 @@
 import { body, param } from "express-validator";
 
-const getIdValidatorForParam = (fieldName: string) =>
-  param(fieldName).isString().trim().isLength({ min: 1, max: 40 }).isNumeric();
+const paramIdValidator = (fieldName: string) =>
+  param(fieldName).trim().isNumeric().isLength({ min: 1, max: 64 });
 
-const getIdValidatorForBody = (fieldName: string) =>
-  body(fieldName).isString().trim().isLength({ min: 1, max: 40 }).isNumeric();
+const bodyIdValidator = (fieldName: string) =>
+  body(fieldName).trim().isNumeric().isLength({ min: 1, max: 64 });
+
+const bodyStringValidator = (fieldName: string) =>
+  body(fieldName).trim().isString().isLength({ min: 1 });
+
+const bodyArrayValidator = (fieldName: string) =>
+  body(fieldName).isArray({ min: 1 });
+
+const bodyNumberIdValidator = (fieldName: string) =>
+  body(fieldName).trim().isNumeric().isLength({ min: 1, max: 64 });
 
 export default {
-  paramDiscordId: getIdValidatorForParam,
-  bodyDiscordId: getIdValidatorForBody,
+  paramIdValidator,
+  paramDiscordId: paramIdValidator,
+  bodyIdValidator,
+  bodyNumberIdValidator,
+  bodyStringValidator,
+  bodyArrayValidator,
+  bodyDiscordId: bodyIdValidator,
   roleIdsArrayValidator: body("roleIds").optional().isArray({ min: 1 }),
   messageValidator: body("message").isString().trim().isLength({ min: 1 }),
   roleNameValidator: body("roleName").isString().trim().isLength({ min: 1 }),
