@@ -20,6 +20,7 @@ import {
   getUser,
   manageMigratedActions,
   setupGuildGuard,
+  getMembersByRoleId,
 } from "./actions";
 import {
   CreateChannelParams,
@@ -404,6 +405,23 @@ const controller = {
         message
       );
       res.status(200).json(result);
+    } catch (error) {
+      const errorMsg = getErrorResult(error);
+      res.status(400).json(errorMsg);
+    }
+  },
+
+  getMembersByRole: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    try {
+      const { roleId, serverId } = req.params;
+      const members = await getMembersByRoleId(serverId, roleId);
+      res.status(200).json(members);
     } catch (error) {
       const errorMsg = getErrorResult(error);
       res.status(400).json(errorMsg);

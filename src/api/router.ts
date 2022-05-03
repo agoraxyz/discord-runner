@@ -146,6 +146,13 @@ const createRouter = () => {
     controller.getUser
   );
 
+  router.get(
+    "/members/:serverId/:roleId",
+    validators.paramDiscordId("roleId"),
+    validators.paramDiscordId("serverId"),
+    controller.getMembersByRole
+  );
+
   return router;
 };
 
