@@ -469,7 +469,7 @@ const controller = {
 
     try {
       const guildId = req?.params?.guildId;
-      const result = getEmoteList(guildId);
+      const result = await getEmoteList(guildId);
 
       res.status(200).json(result);
     } catch (err) {
