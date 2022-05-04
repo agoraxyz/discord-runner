@@ -721,10 +721,12 @@ const getChannelList = async (guildId: string): Promise<ChannelObj[]> => {
   const guild = await Main.Client.guilds.fetch(guildId);
   const channels = await guild.channels.fetch();
 
-  return channels.map((channel) => ({
-    name: channel.name,
-    id: channel.id,
-  }));
+  return channels
+    .filter((channel) => !channel.type.match(/^GUILD_(CATEGORY|VOICE)$/))
+    .map((channel) => ({
+      name: channel.name,
+      id: channel.id,
+    }));
 };
 
 export {
