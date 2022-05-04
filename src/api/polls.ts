@@ -8,6 +8,7 @@ import { NewPoll, Poll } from "./types";
 import Main from "../Main";
 import logger from "../utils/logger";
 import config from "../config";
+import pollStorage from "./pollStorage";
 
 const createPollText = async (
   poll: NewPoll | Poll,
@@ -45,24 +46,18 @@ const createPollText = async (
 };
 
 const createPoll = async (poll: NewPoll): Promise<boolean> => {
-  const { channelId, question, expDate, options, reactions, requirementId } =
-    poll;
-
   try {
-    const channel = Main.Client.channels.cache.get(channelId) as TextChannel;
+    const channel = Main.Client.channels.cache.get(
+      poll.channelId
+    ) as TextChannel;
 
     await axios.post(
       `${config.backendUrl}/poll`,
       {
         platform: config.platform,
         platformId: channel.guildId,
-        channelId,
-        requirementId,
-        question,
         startDate: dayjs().unix(),
-        expDate,
-        options,
-        reactions,
+        ...poll,
       },
       { timeout: 150000 }
     );
@@ -75,50 +70,62 @@ const createPoll = async (poll: NewPoll): Promise<boolean> => {
   return false;
 };
 
-const endPoll = async (
-  id: string,
-  interaction?: CommandInteraction
-): Promise<void> => {
-  const pollResponse = await axios.get(`${config.backendUrl}/poll/${id}`);
-
-  const poll = pollResponse.data;
+const pollBuildResponse = async (
+  interaction: CommandInteraction
+): Promise<boolean> => {
+  const poll = pollStorage.getPoll(interaction.user.id);
 
   if (poll) {
-    const owner = interaction.guild
-      ? await interaction.guild.fetchOwner()
-      : await (
-          Main.Client.channels.cache.get(poll.channelId) as any
-        ).guild.fetchOwner();
-
-    if (interaction.user.id === owner.id) {
-      poll.ended = true;
-
-      await axios.post(`${config.backendUrl}/poll`, poll, {
-        timeout: 150000,
-      });
-
+    if (poll.requirementId === 0) {
       interaction.reply({
-        content: `Poll #${id} has been closed.`,
+        content: "You must choose a token for weighting.",
         ephemeral: interaction.channel.type !== "DM",
       });
-    } else {
+
+      return true;
+    }
+    if (poll.question === "") {
       interaction.reply({
-        content: "Seems like you are not the guild owner.",
+        content: "The poll must have a question.",
         ephemeral: interaction.channel.type !== "DM",
       });
+
+      return true;
+    }
+    if (poll.options.length <= 1) {
+      interaction.reply({
+        content: "The poll must have at least two options.",
+        ephemeral: interaction.channel.type !== "DM",
+      });
+
+      return true;
+    }
+    if (poll.options.length !== poll.reactions.length) {
+      interaction.reply({
+        content: "The amount of options and reactions must be the same.",
+        ephemeral: interaction.channel.type !== "DM",
+      });
+
+      return true;
+    }
+    if (poll.expDate === "") {
+      interaction.reply({
+        content: "The poll must have an expriation date.",
+        ephemeral: interaction.channel.type !== "DM",
+      });
+
+      return true;
     }
   } else {
     interaction.reply({
-      content: `Couldn't find a poll with the id #${id}.`,
+      content: "You don't have an active poll creation process.",
       ephemeral: interaction.channel.type !== "DM",
     });
+
+    return true;
   }
+
+  return false;
 };
 
-const hasEnded = async (id: string): Promise<boolean> => {
-  const pollResponse = await axios.get(`${config.backendUrl}/poll/${id}`);
-
-  return pollResponse.data.ended;
-};
-
-export { createPollText, createPoll, endPoll, hasEnded };
+export { createPollText, createPoll, pollBuildResponse };
