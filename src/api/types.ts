@@ -66,11 +66,9 @@ type SelectMenuOption = {
   value: string;
 };
 
-type RequirementDict = { [k: string]: SelectMenuOption[] };
-
 type NewPoll = {
   roles: SelectMenuOption[];
-  requirements: RequirementDict;
+  requirements: SelectMenuOption[];
   requirementId: number;
   channelId: string;
   question: string;
@@ -86,7 +84,6 @@ type Poll = {
   expDate: number;
   options: string[];
   reactions: string[];
-  roleId: number;
 };
 
 type Reaction = {
@@ -114,7 +111,6 @@ export {
   LevelInfo,
   InviteData,
   SelectMenuOption,
-  RequirementDict,
   NewPoll,
   Poll,
   Reaction,
