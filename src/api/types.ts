@@ -98,6 +98,13 @@ type Vote = {
   optionIndex: number;
 };
 
+type Emote = {
+  name: string;
+  id: string;
+  image: string;
+  animated: boolean;
+};
+
 export {
   ManageRolesParams,
   CreateChannelParams,
@@ -115,4 +122,5 @@ export {
   Poll,
   Reaction,
   Vote,
+  Emote,
 };

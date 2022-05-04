@@ -21,6 +21,7 @@ import logger from "../utils/logger";
 import {
   CreateChannelParams,
   DeleteChannelAndRoleParams,
+  Emote,
   InviteResult,
   ManageRolesParams,
   Poll,
@@ -673,6 +674,18 @@ const sendPollMessage = async (
   return +msg.id;
 };
 
+const getEmoteList = async (guildId: string): Promise<Emote[]> => {
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const emotes = await guild.emojis.fetch();
+
+  return emotes.map((emote) => ({
+    name: emote.name,
+    id: emote.id,
+    image: emote.url,
+    animated: emote.animated,
+  }));
+};
+
 export {
   manageRoles,
   manageMigratedActions,
@@ -693,4 +706,5 @@ export {
   getUser,
   setupGuildGuard,
   sendPollMessage,
+  getEmoteList,
 };

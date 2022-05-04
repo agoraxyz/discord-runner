@@ -157,6 +157,12 @@ const createRouter = () => {
     controller.createPoll
   );
 
+  router.get(
+    "/emotes/:guildId",
+    [validators.paramIdValidator("guildId")],
+    controller.getEmotes
+  );
+
   return router;
 };
 
