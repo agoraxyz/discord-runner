@@ -1,3 +1,4 @@
+/* eslint-disable default-param-last */
 import { AxiosResponse } from "axios";
 import {
   GuildMember,
@@ -14,6 +15,7 @@ import {
 } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
+import Main from "../Main";
 import { getGuildsOfServer } from "../service";
 import logger from "./logger";
 
@@ -92,11 +94,11 @@ const createJoinInteractionPayload = (
   },
   title: string = "Verify your wallet",
   messageText: string = null,
-  buttonText: string = `Join ${guild?.name || "Guild"}`
+  buttonText?: string
 ) => {
   const joinButton = new MessageButton({
     customId: "join-button",
-    label: buttonText,
+    label: buttonText || `Join ${guild?.name || "Guild"}`,
     emoji: "🔗",
     style: "PRIMARY",
   });
@@ -154,6 +156,7 @@ const getJoinReplyMessage = async (
   userId: string
 ): Promise<MessageOptions> => {
   let message: MessageOptions;
+  logger.verbose(`getJoinReply - ${roleIds} ${guild.id} ${userId}`);
   if (roleIds && roleIds.length !== 0) {
     const channelIds = getAccessedChannelsByRoles(guild, roleIds).map(
       (c) => c.id
@@ -179,7 +182,7 @@ const getJoinReplyMessage = async (
           .join("\n")}`,
       };
     }
-  } else if (roleIds) {
+  } else if (roleIds && roleIds[0] !== "") {
     message = {
       content: "❌ You don't have access to any guilds in this server.",
     };
@@ -226,6 +229,100 @@ const denyViewEntryChannelForRole = async (
   }
 };
 
+const getChannelsByCategoryWithRoles = (guild: Guild) => {
+  // sort channels by categoryId
+  const channelsByCategoryId = guild.channels.cache.reduce<
+    Map<string, { id: string; name: string; roles: string[] }[]>
+  >((acc, ch) => {
+    // skip if not text or news channel
+    if (ch.type !== "GUILD_TEXT" && ch.type !== "GUILD_NEWS") {
+      return acc;
+    }
+
+    // handle where threre is not parent
+    const parentId = ch.parent?.id || "-";
+
+    // create parentId key if not exists
+    if (!acc.has(parentId)) {
+      acc.set(parentId, []);
+    }
+
+    // filter for roles that have explicit permission overwrites
+    const roles = guild.roles.cache
+      .filter((role) =>
+        ch.permissionOverwrites.cache
+          .get(role.id)
+          ?.allow.has(Permissions.FLAGS.VIEW_CHANNEL)
+      )
+      .map((role) => role.id);
+
+    // add channel info to the category's array
+    acc.get(parentId).push({
+      id: ch.id,
+      name: ch.name,
+      roles,
+    });
+    return acc;
+  }, new Map());
+
+  // add categoryName and convert to array
+  const channelsByCategory = [];
+  channelsByCategoryId.forEach((v, k) => {
+    channelsByCategory.push({
+      id: k,
+      name: k === "-" ? "-" : guild.channels.cache.get(k).name,
+      channels: v,
+    });
+  });
+
+  return channelsByCategory;
+};
+
+const updateAccessedChannelsOfRole = (
+  serverId: string,
+  roleId: string,
+  channelIds: string[]
+) => {
+  const shouldHaveAccess = new Set(channelIds);
+
+  const channels = Main.Client.guilds.cache
+    .get(serverId)
+    ?.channels.cache.filter((channel) => !channel.isThread()) as Collection<
+    string,
+    GuildChannel
+  >;
+
+  const [channelsToAllow, channelsToDeny] = channels.partition(
+    (channel) =>
+      shouldHaveAccess.has(channel.id) ||
+      shouldHaveAccess.has(channel.parentId) ||
+      (channel.type !== "GUILD_CATEGORY" &&
+        !channel.parent &&
+        shouldHaveAccess.has("-"))
+  );
+
+  return Promise.all([
+    ...channelsToDeny.map((channelToDenyAccessTo) =>
+      channelToDenyAccessTo.permissionOverwrites.create(roleId, {
+        VIEW_CHANNEL: null,
+      })
+    ),
+    ...channelsToAllow.map((channelToAllowAccessTo) =>
+      channelToAllowAccessTo.permissionOverwrites.create(roleId, {
+        VIEW_CHANNEL: true,
+      })
+    ),
+    ...channelsToAllow.map((channelToAllowAccessTo) =>
+      channelToAllowAccessTo.permissionOverwrites.create(
+        Main.Client.guilds.cache.get(serverId).roles.everyone.id,
+        {
+          VIEW_CHANNEL: false,
+        }
+      )
+    ),
+  ]);
+};
+
 export {
   getUserResult,
   getErrorResult,
@@ -236,4 +333,6 @@ export {
   getJoinReplyMessage,
   getAccessedChannelsByRoles,
   denyViewEntryChannelForRole,
+  getChannelsByCategoryWithRoles,
+  updateAccessedChannelsOfRole,
 };

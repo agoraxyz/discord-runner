@@ -34,7 +34,6 @@ const createRouter = () => {
   router.get(
     "/invite/:guildId/:inviteChannelId",
     validators.paramDiscordId("guildId"),
-    validators.paramDiscordId("inviteChannelId"),
     controller.getInvite
   );
 
@@ -81,6 +80,7 @@ const createRouter = () => {
     validators.roleNameValidator,
     validators.isGuardedValidator,
     validators.entryChannelIdValidator,
+    validators.gatedChannelsValidator,
     controller.updateRole
   );
 
@@ -105,16 +105,17 @@ const createRouter = () => {
     controller.isIn
   );
 
-  router.get(
-    "/channels/:guildId",
+  router.post(
+    "/server/:guildId",
     validators.paramDiscordId("guildId"),
-    controller.channels
+    controller.server
   );
 
   router.post(
     "/channels/sendJoin",
     validators.bodyDiscordId("guildId"),
     validators.bodyDiscordId("channelId"),
+    ...validators.sendJoinMeta,
     controller.sendJoinButtonToChannel
   );
 
@@ -143,6 +144,13 @@ const createRouter = () => {
     "/user/:platformUserId",
     validators.paramDiscordId("platformUserId"),
     controller.getUser
+  );
+
+  router.get(
+    "/members/:serverId/:roleId",
+    validators.paramDiscordId("roleId"),
+    validators.paramDiscordId("serverId"),
+    controller.getMembersByRole
   );
 
   router.post(

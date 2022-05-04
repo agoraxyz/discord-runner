@@ -97,6 +97,11 @@ type Vote = {
   platformUserId: string;
   optionIndex: number;
 };
+type SendJoinMeta = Partial<{
+  title: string;
+  description: string;
+  button: string;
+}>;
 
 type Emote = {
   name: string;
@@ -106,6 +111,7 @@ type Emote = {
 };
 
 export {
+  SendJoinMeta,
   ManageRolesParams,
   CreateChannelParams,
   DeleteChannelAndRoleParams,

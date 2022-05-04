@@ -49,8 +49,12 @@ class Main {
     });
 
     this._client.on("messageCreate", (message) => {
-      if (!message.author.bot) {
-        this._client.executeCommand(message);
+      try {
+        if (!message.author.bot) {
+          this._client.executeCommand(message);
+        }
+      } catch (error) {
+        logger.error(`messageCreate error - ${error.message}`);
       }
     });
 

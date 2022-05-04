@@ -44,4 +44,12 @@ export default {
   entryChannelIdValidator: body("entryChannelId")
     .optional()
     .isLength({ min: 1 }),
+  sendJoinMeta: [
+    body("title").trim().optional().isLength({ min: 1 }),
+    body("description").trim().optional().isLength({ min: 1 }),
+    body("button").trim().optional().isLength({ min: 1 }),
+  ],
+  gatedChannelsValidator: body("gatedChannels.*")
+    .optional()
+    .isLength({ min: 1 }),
 };
