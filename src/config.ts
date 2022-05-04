@@ -23,19 +23,23 @@ const joinButtonEmojis = {
   emoji2: process.env.JOIN_BUTTON_EMOJI2 || "🤍",
 };
 
-if (!discordToken)
+if (!discordToken) {
   throw new Error(
     "You need to specify the bot's DISCORD_TOKEN in the .env file."
   );
+}
 
-if (!backendUrl)
+if (!backendUrl) {
   throw new Error("You need to specify the BACKEND_URL in the .env file.");
+}
 
-if (!redisHost)
+if (!redisHost) {
   throw new Error("You need to specify the REDIS_HOST in the .env file.");
+}
 
-if (!hmacSecret)
+if (!hmacSecret) {
   throw new Error("You need to specify the HMAC_SECRET in the .env file.");
+}
 
 export default {
   redisHost,
