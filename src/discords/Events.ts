@@ -162,6 +162,7 @@ abstract class Events {
   @Guard(NotABot, IsDM, NotACommand)
   async onPrivateMessage([message]: [Message]): Promise<void> {
     const userId = message.author.id;
+    const msgText = message.content;
     const poll = pollStorage.getPoll(userId);
 
     if (poll) {
@@ -182,6 +183,12 @@ abstract class Events {
 
         case 2: {
           if (options.length === reactions.length) {
+            if (options.length === 20) {
+              message.reply("You have reached the maximum number of options.");
+
+              break;
+            }
+
             if (!options.includes(message.content)) {
               pollStorage.savePollOption(userId, message.content);
 
@@ -190,15 +197,24 @@ abstract class Events {
               message.reply("This option has already been added");
             }
           } else if (!reactions.includes(message.content)) {
-            pollStorage.savePollReaction(userId, message.content);
+            const emojiRegex = /\p{Extended_Pictographic}/gu;
+            const emoteRegex = /<[a ]:\w+:[0-9]+>/;
 
-            if (options.length >= 2) {
-              message.reply(
-                "Give me a new option or go to the nex step by using " +
-                  "**/enough**"
-              );
+            if (
+              message.content.match(emojiRegex) ||
+              message.content.match(emoteRegex)
+            ) {
+              pollStorage.savePollReaction(userId, message.content);
+
+              if (options.length >= 2) {
+                message.reply(
+                  "Please give me a new option or go to the next step by using **/enough**"
+                );
+              } else {
+                message.reply("Give me the next option");
+              }
             } else {
-              message.reply("Give me the next option");
+              message.reply("The message you sent doesn't contain any emoji");
             }
           } else {
             message.reply(
@@ -211,7 +227,19 @@ abstract class Events {
 
         case 3: {
           try {
-            const [day, hour, minute] = message.content.split(":");
+            const dateRegex =
+              /([1-9][0-9]*|[0-9]):([0-1][0-9]|[0-9]|[2][0-4]):([0-5][0-9]|[0-9])/;
+            const found = msgText.match(dateRegex);
+
+            if (!found) {
+              await message.reply(
+                "The message you sent me is not in the DD:HH:mm format. Please verify the contents of your message and send again."
+              );
+
+              return;
+            }
+
+            const [day, hour, minute] = msgText.split(":");
 
             const expDate = dayjs()
               .add(parseInt(day, 10), "day")
