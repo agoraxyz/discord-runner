@@ -23,6 +23,7 @@ import {
   getMembersByRoleId,
   sendPollMessage,
   getEmoteList,
+  getChannelList,
 } from "./actions";
 import {
   CreateChannelParams,
@@ -470,6 +471,24 @@ const controller = {
     try {
       const guildId = req?.params?.guildId;
       const result = await getEmoteList(guildId);
+
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(400).json(getErrorResult(err));
+    }
+  },
+
+  getChannels: async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+
+    try {
+      const guildId = req?.params?.guildId;
+      const result = await getChannelList(guildId);
 
       res.status(200).json(result);
     } catch (err) {

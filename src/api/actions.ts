@@ -19,6 +19,7 @@ import axios from "axios";
 import Main from "../Main";
 import logger from "../utils/logger";
 import {
+  ChannelObj,
   CreateChannelParams,
   DeleteChannelAndRoleParams,
   Emote,
@@ -716,6 +717,16 @@ const getEmoteList = async (guildId: string): Promise<Emote[]> => {
   }));
 };
 
+const getChannelList = async (guildId: string): Promise<ChannelObj[]> => {
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const channels = await guild.channels.fetch();
+
+  return channels.map((channel) => ({
+    name: channel.name,
+    id: channel.id,
+  }));
+};
+
 export {
   getMembersByRoleId,
   manageRoles,
@@ -738,4 +749,5 @@ export {
   setupGuildGuard,
   sendPollMessage,
   getEmoteList,
+  getChannelList,
 };

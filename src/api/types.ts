@@ -110,6 +110,11 @@ type Emote = {
   animated: boolean;
 };
 
+type ChannelObj = {
+  name: string;
+  id: string;
+};
+
 export {
   SendJoinMeta,
   ManageRolesParams,
@@ -129,4 +134,5 @@ export {
   Reaction,
   Vote,
   Emote,
+  ChannelObj,
 };
