@@ -170,13 +170,10 @@ abstract class Events {
 
       switch (pollStorage.getUserStep(userId)) {
         case 1: {
-          pollStorage.savePollQuestion(userId, message.content);
+          pollStorage.savePollQuestion(userId, msgText);
           pollStorage.setUserStep(userId, 2);
 
-          message.channel.send(
-            "Please give me the options and the corresponding emotes for the poll (one after another).\n" +
-              "Make sure that you only use emotes from the server on which you want to create the poll."
-          );
+          message.channel.send("Please give me the first option of your poll.");
 
           break;
         }
@@ -189,36 +186,52 @@ abstract class Events {
               break;
             }
 
-            if (!options.includes(message.content)) {
-              pollStorage.savePollOption(userId, message.content);
+            if (!options.includes(msgText)) {
+              pollStorage.savePollOption(userId, msgText);
 
               message.reply("Now send me the corresponding emoji");
             } else {
               message.reply("This option has already been added");
             }
-          } else if (!reactions.includes(message.content)) {
-            const emojiRegex = /\p{Extended_Pictographic}/gu;
-            const emoteRegex = /<[a ]:\w+:[0-9]+>/;
+          } else if (!reactions.includes(msgText)) {
+            const emojiRegex =
+              /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu;
+            const emoteRegex = /<a*:\w+:[0-9]+>/;
 
-            if (
-              message.content.match(emojiRegex) ||
-              message.content.match(emoteRegex)
-            ) {
-              pollStorage.savePollReaction(userId, message.content);
+            if (msgText.match(emojiRegex) || msgText.match(emoteRegex)) {
+              if (msgText.match(emoteRegex)) {
+                const emotes = Main.Client.emojis.cache.map((emoji) => ({
+                  name: emoji.name,
+                  id: emoji.id,
+                }));
 
-              if (options.length >= 2) {
-                message.reply(
-                  "Please give me a new option or go to the next step by using **/enough**"
-                );
+                const emoteExtractor = /^<(a*)\S*:(\w+)\S*:([0-9]+)\S*>$/i;
+                const [, , name, id] = emoteExtractor.exec(msgText);
+
+                if (!emotes.some((e) => e.name === name && e.id === id)) {
+                  await message.reply(
+                    "Please only use emotes from your guild. Send a differend emote."
+                  );
+
+                  return;
+                }
+              }
+
+              pollStorage.savePollReaction(userId, msgText);
+
+              if (options.length === 1) {
+                message.reply("Please give me the second option.");
               } else {
-                message.reply("Give me the next option");
+                message.reply(
+                  "Please give me a new option or go to the next step by using **/enough**."
+                );
               }
             } else {
               message.reply("The message you sent doesn't contain any emoji");
             }
           } else {
             message.reply(
-              "This emoji has already been used, choose another one"
+              "This emoji has already been used, please choose another one."
             );
           }
 
@@ -229,7 +242,7 @@ abstract class Events {
           try {
             const dateRegex =
               /([1-9][0-9]*|[0-9]):([0-1][0-9]|[0-9]|[2][0-4]):([0-5][0-9]|[0-9])/;
-            const found = msgText.match(dateRegex);
+            const found = dateRegex.exec(msgText);
 
             if (!found) {
               await message.reply(
@@ -239,7 +252,7 @@ abstract class Events {
               return;
             }
 
-            const [day, hour, minute] = msgText.split(":");
+            const [, day, hour, minute] = found;
 
             const expDate = dayjs()
               .add(parseInt(day, 10), "day")
