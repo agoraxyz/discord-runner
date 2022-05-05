@@ -99,6 +99,13 @@ const createRouter = () => {
     controller.createGuildGuard
   );
 
+  router.post(
+    "/resetguard",
+    validators.bodyDiscordId("serverId"),
+    validators.entryChannelIdValidator,
+    controller.createGuildGuard
+  );
+
   router.get(
     "/isIn/:guildId",
     validators.paramDiscordId("guildId"),

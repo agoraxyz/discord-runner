@@ -668,6 +668,48 @@ const setupGuildGuard = async (
   return createdEntryChannelId;
 };
 
+const resetGuildGuard = async (guildId: string, entryChannelId: string) => {
+  logger.verbose(`Resetting guild guard, server: ${guildId}`);
+
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const entryChannel = guild.channels.cache.get(entryChannelId);
+  if (!entryChannel) {
+    throw new Error(
+      `Channel with id ${entryChannelId} does not exists in server ${guildId}.`
+    );
+  }
+
+  if (entryChannel instanceof ThreadChannel) {
+    throw Error("Entry channel cannot be a thread.");
+  }
+
+  if (entryChannel.type === "GUILD_VOICE") {
+    throw Error("Entry channel cannot be a voice channel.");
+  }
+
+  const editReason = `Updated by ${Main.Client.user.username} because Guild Guard has been disabled.`;
+
+  await entryChannel.permissionOverwrites.delete(
+    guild.roles.everyone.id,
+    editReason
+  );
+
+  await Promise.all(
+    guild.roles.cache
+      .filter((role) => !role.permissions.has("VIEW_CHANNEL"))
+      .map((role) =>
+        role.edit({ permissions: role.permissions.add("VIEW_CHANNEL") })
+      )
+  );
+
+  await guild.roles.everyone.edit(
+    {
+      permissions: guild.roles.everyone.permissions.add("VIEW_CHANNEL"),
+    },
+    editReason
+  );
+};
+
 export {
   manageRoles,
   manageMigratedActions,
@@ -687,4 +729,5 @@ export {
   sendJoinButton,
   getUser,
   setupGuildGuard,
+  resetGuildGuard,
 };
