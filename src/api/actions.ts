@@ -66,7 +66,7 @@ const notifyAccessedChannels = async (
 
   let message: string;
   if (accessedChannels.size === 0) {
-    message = `You got access to the \`${guildName}\` role in \`${member.guild.name}\`.`;
+    message = `You got access to the \`${guildName}\` role  in \`${member.guild.name}\`.`;
   } else {
     message = `You got access to ${
       accessedChannels.size > 1 ? "these channels" : "this channel"
@@ -676,6 +676,48 @@ const setupGuildGuard = async (
   return createdEntryChannelId;
 };
 
+const resetGuildGuard = async (guildId: string, entryChannelId: string) => {
+  logger.verbose(`Resetting guild guard, server: ${guildId}`);
+
+  const guild = await Main.Client.guilds.fetch(guildId);
+  const entryChannel = guild.channels.cache.get(entryChannelId);
+  if (!entryChannel) {
+    throw new Error(
+      `Channel with id ${entryChannelId} does not exists in server ${guildId}.`
+    );
+  }
+
+  if (entryChannel instanceof ThreadChannel) {
+    throw Error("Entry channel cannot be a thread.");
+  }
+
+  if (entryChannel.type === "GUILD_VOICE") {
+    throw Error("Entry channel cannot be a voice channel.");
+  }
+
+  const editReason = `Updated by ${Main.Client.user.username} because Guild Guard has been disabled.`;
+
+  await entryChannel.permissionOverwrites.delete(
+    guild.roles.everyone.id,
+    editReason
+  );
+
+  await Promise.all(
+    guild.roles.cache
+      .filter((role) => !role.permissions.has("VIEW_CHANNEL"))
+      .map((role) =>
+        role.edit({ permissions: role.permissions.add("VIEW_CHANNEL") })
+      )
+  );
+
+  await guild.roles.everyone.edit(
+    {
+      permissions: guild.roles.everyone.permissions.add("VIEW_CHANNEL"),
+    },
+    editReason
+  );
+};
+
 const getMembersByRoleId = async (serverId: string, roleId: string) => {
   const server = await Main.Client.guilds.fetch(serverId);
 
@@ -752,4 +794,5 @@ export {
   sendPollMessage,
   getEmoteList,
   getChannelList,
+  resetGuildGuard,
 };

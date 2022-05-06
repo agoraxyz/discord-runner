@@ -1,6 +1,5 @@
 /* eslint-disable class-methods-use-this */
 /* eslint no-return-await: "off" */
-/* eslint no-underscore-dangle: "off" */
 
 import {
   Collection,
@@ -21,7 +20,6 @@ import dayjs from "dayjs";
 import axios from "axios";
 import IsDM from "../guards/IsDM";
 import NotABot from "../guards/NotABot";
-import NotACommand from "../guards/NotACommand";
 import Main from "../Main";
 import { getGuildsOfServer, userJoined, userRemoved } from "../service";
 import logger from "../utils/logger";
@@ -50,8 +48,8 @@ const messageReactionCommon = async (
     const msg = reaction.message;
 
     const result = msg.embeds[0]?.title
-      .match(/Poll #(.*?): /g)
-      .map((str: string) => str.substring(6, str.length - 2));
+      ?.match(/Poll #(.*?): /g)
+      ?.map((str: string) => str?.substring(6, str.length - 2));
 
     if (result?.length === 1) {
       try {
@@ -159,7 +157,7 @@ abstract class Events {
   }
 
   @On("messageCreate")
-  @Guard(NotABot, IsDM, NotACommand)
+  @Guard(NotABot, IsDM)
   async onPrivateMessage([message]: [Message]): Promise<void> {
     const userId = message.author.id;
     const msgText = message.content;
