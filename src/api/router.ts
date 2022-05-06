@@ -103,7 +103,7 @@ const createRouter = () => {
     "/resetguard",
     validators.bodyDiscordId("serverId"),
     validators.entryChannelIdValidator,
-    controller.createGuildGuard
+    controller.resetGuildGuard
   );
 
   router.get(
