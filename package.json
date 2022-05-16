@@ -23,7 +23,7 @@
     "axios": "^0.26.1",
     "dayjs": "^1.11.1",
     "discord.js": "^13.6.0",
-    "discordx": "^9.5.2",
+    "discordx": "^9.6.0",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
     "express-validator": "^6.14.0",
