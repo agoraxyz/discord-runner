@@ -1,7 +1,6 @@
 /* eslint-disable class-methods-use-this */
 import {
   CommandInteraction,
-  DMChannel,
   GuildMember,
   MessageActionRow,
   MessageSelectMenu,
@@ -16,7 +15,6 @@ import pollStorage from "../api/pollStorage";
 import { createJoinInteractionPayload } from "../utils/utils";
 import { getGuildsOfServer } from "../service";
 import config from "../config";
-import { RequirementDict } from "../api/types";
 
 @Discord()
 abstract class Slashes {
@@ -105,8 +103,8 @@ abstract class Slashes {
     interaction: CommandInteraction
   ) {
     const tmp = interaction;
-    
-    if (!interaction.isGuild()) {
+
+    if (!interaction.inGuild()) {
       tmp.reply("Use this command in a server to spawn a join button!");
       return;
     }
