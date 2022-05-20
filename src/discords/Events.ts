@@ -171,15 +171,33 @@ abstract class Events {
           pollStorage.savePollQuestion(userId, msgText);
           pollStorage.setUserStep(userId, 2);
 
-          message.channel.send("Please give me the first option of your poll.");
+          await message.channel.send(
+            "Please give me the description of your poll or skip to the next step by sending `skip`."
+          );
 
           break;
         }
 
         case 2: {
+          pollStorage.savePollDescription(
+            userId,
+            msgText === "skip" ? undefined : msgText
+          );
+          pollStorage.setUserStep(userId, 3);
+
+          await message.channel.send(
+            "Please give me the first option of your poll."
+          );
+
+          break;
+        }
+
+        case 3: {
           if (options.length === reactions.length) {
             if (options.length === 20) {
-              message.reply("You have reached the maximum number of options.");
+              await message.reply(
+                "You have reached the maximum number of options."
+              );
 
               break;
             }
@@ -187,9 +205,9 @@ abstract class Events {
             if (!options.includes(msgText)) {
               pollStorage.savePollOption(userId, msgText);
 
-              message.reply("Now send me the corresponding emoji");
+              await message.reply("Now send me the corresponding emoji");
             } else {
-              message.reply("This option has already been added");
+              await message.reply("This option has already been added");
             }
           } else if (!reactions.includes(msgText)) {
             const emojiRegex =
@@ -218,17 +236,19 @@ abstract class Events {
               pollStorage.savePollReaction(userId, msgText);
 
               if (options.length === 1) {
-                message.reply("Please give me the second option.");
+                await message.reply("Please give me the second option.");
               } else {
-                message.reply(
+                await message.reply(
                   "Please give me a new option or go to the next step by using **/enough**."
                 );
               }
             } else {
-              message.reply("The message you sent doesn't contain any emoji");
+              await message.reply(
+                "The message you sent doesn't contain any emoji"
+              );
             }
           } else {
-            message.reply(
+            await message.reply(
               "This emoji has already been used, please choose another one."
             );
           }
@@ -236,7 +256,7 @@ abstract class Events {
           break;
         }
 
-        case 3: {
+        case 4: {
           try {
             const dateRegex =
               /([1-9][0-9]*|[0-9]):([0-1][0-9]|[0-9]|[2][0-4]):([0-5][0-9]|[0-9])/;
@@ -300,7 +320,7 @@ abstract class Events {
           "You can find more information on [docs.guild.xyz](https://docs.guild.xyz/).",
       });
 
-      message.channel.send({ embeds: [embed] }).catch(logger.error);
+      await message.channel.send({ embeds: [embed] }).catch(logger.error);
 
       logger.verbose(
         `unkown request: ${message.author.username}#${message.author.discriminator}: ${message.content}`
