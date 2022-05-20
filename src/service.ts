@@ -87,6 +87,5 @@ export {
   userJoined,
   userRemoved,
   statusUpdate,
-  getGuildsOfServer,
-  guildStatusUpdate,
+  getGuildsOfServer
 };

@@ -16,6 +16,7 @@ import pollStorage from "../api/pollStorage";
 import { createJoinInteractionPayload } from "../utils/utils";
 import { getGuildsOfServer } from "../service";
 import config from "../config";
+import { RequirementDict } from "../api/types";
 
 @Discord()
 abstract class Slashes {
@@ -103,8 +104,10 @@ abstract class Slashes {
     buttonText: string,
     interaction: CommandInteraction
   ) {
-    if (interaction.channel! instanceof DMChannel) {
-      interaction.reply("Use this command in a server to spawn a join button!");
+    const tmp = interaction;
+    
+    if (!interaction.isGuild()) {
+      tmp.reply("Use this command in a server to spawn a join button!");
       return;
     }
 
