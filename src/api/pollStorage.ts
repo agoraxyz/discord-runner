@@ -1,3 +1,5 @@
+import { TextChannel } from "discord.js";
+import Main from "../Main";
 import { NewPoll, SelectMenuOption } from "./types";
 
 const pollOfUser: Map<string, NewPoll> = new Map();
@@ -10,12 +12,17 @@ const setUserStep = (userId: string, step: number): void => {
 const getUserStep = (userId: string): number => userStep.get(userId);
 
 const initPoll = (userId: string, channelId: string): void => {
+  const channel = Main.Client.channels.cache.get(channelId) as TextChannel;
+  const platformId = channel.guildId;
+
   pollOfUser.set(userId, {
     roles: [],
     requirements: [],
     requirementId: 0,
+    platformId,
     channelId,
     question: "",
+    description: "",
     options: [],
     reactions: [],
     expDate: "",
@@ -37,6 +44,13 @@ const saveReqId = (userId: string, requirementId: number): void => {
 
 const savePollQuestion = (userId: string, question: string): void => {
   pollOfUser.set(userId, { ...pollOfUser.get(userId), question });
+};
+
+const savePollDescription = (userId: string, description: string): void => {
+  pollOfUser.set(userId, {
+    ...pollOfUser.get(userId),
+    description,
+  });
 };
 
 const savePollOption = (userId: string, option: string): boolean => {
@@ -83,6 +97,7 @@ export default {
   saveRequirements,
   saveReqId,
   savePollQuestion,
+  savePollDescription,
   savePollOption,
   savePollReaction,
   savePollExpDate,
