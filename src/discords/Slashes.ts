@@ -1,6 +1,7 @@
 /* eslint-disable class-methods-use-this */
 import {
   CommandInteraction,
+  DMChannel,
   GuildMember,
   MessageActionRow,
   MessageSelectMenu,
@@ -53,10 +54,13 @@ abstract class Slashes {
 
   @Slash("join", { description: "Join the guild of this server." })
   async join(interaction: CommandInteraction) {
-    if (interaction.channel.type === "DM") {
-      interaction.reply(
+    const tmp = interaction;
+
+    if (!interaction.inGuild()) {
+      tmp.reply(
         "❌ Use this command in a server to join all of its guilds you have access to!"
       );
+
       return;
     }
 
@@ -99,7 +103,7 @@ abstract class Slashes {
     buttonText: string,
     interaction: CommandInteraction
   ) {
-    if (interaction.channel.type === "DM") {
+    if (interaction.channel! instanceof DMChannel) {
       interaction.reply("Use this command in a server to spawn a join button!");
       return;
     }
@@ -113,10 +117,12 @@ abstract class Slashes {
         content: "❌ Only server admins can use this command.",
         ephemeral: true,
       });
+
       return;
     }
 
     const guild = await getGuildsOfServer(interaction.guild.id);
+
     if (!guild) {
       await interaction.reply({
         content: "❌ There are no guilds in this server.",
@@ -146,7 +152,7 @@ abstract class Slashes {
   @Slash("poll", { description: "Creates a poll." })
   async poll(interaction: CommandInteraction) {
     try {
-      if (interaction.channel.type !== "DM" && !interaction.user.bot) {
+      if (interaction.inGuild() && !interaction.user.bot) {
         const userId = interaction.user.id;
 
         if (pollStorage.getPoll(userId)) {
@@ -260,16 +266,16 @@ abstract class Slashes {
 
   @Slash("enough", { description: "Skips adding poll options." })
   async enough(interaction: CommandInteraction) {
-    if (interaction.channel.type === "DM") {
-      const userId = interaction.user.id;
-      const poll = pollStorage.getPoll(userId);
+    const userId = interaction.user.id;
+    const poll = pollStorage.getPoll(userId);
 
+    if (poll) {
       if (
-        pollStorage.getUserStep(userId) === 2 &&
+        pollStorage.getUserStep(userId) === 3 &&
         poll.options.length === poll.reactions.length &&
         poll.options.length >= 2
       ) {
-        pollStorage.setUserStep(userId, 3);
+        pollStorage.setUserStep(userId, 4);
 
         interaction.reply(
           "Please give me the duration of the poll in the DD:HH:mm format (days:hours:minutes)"
@@ -279,8 +285,8 @@ abstract class Slashes {
       }
     } else {
       interaction.reply({
-        content: "You have to use this command in DM.",
-        ephemeral: true,
+        content: "You don't have an active poll creation process.",
+        ephemeral: interaction.inGuild(),
       });
     }
   }
@@ -296,31 +302,30 @@ abstract class Slashes {
 
       const poll = pollStorage.getPoll(userId);
 
-      if (poll && pollStorage.getUserStep(userId) === 4) {
+      if (poll) {
         if (await createPoll(poll)) {
           interaction.reply({
             content: "The poll has been created.",
-            ephemeral: interaction.channel.type !== "DM",
+            ephemeral: interaction.inGuild(),
           });
 
           pollStorage.deleteMemory(userId);
         } else {
           interaction.reply({
             content: "There was an error while creating the poll.",
-            ephemeral: interaction.channel.type !== "DM",
+            ephemeral: interaction.inGuild(),
           });
         }
       } else {
         interaction.reply({
-          content:
-            "Poll creation procedure is not finished, you must continue.",
-          ephemeral: interaction.channel.type !== "DM",
+          content: "You don't have an active poll creation process.",
+          ephemeral: interaction.inGuild(),
         });
       }
     } catch (err) {
       interaction.reply({
         content: "There was an error while creating the poll.",
-        ephemeral: interaction.channel.type !== "DM",
+        ephemeral: interaction.inGuild(),
       });
 
       logger.error(err);
@@ -332,7 +337,7 @@ abstract class Slashes {
     try {
       const userId = interaction.user.id;
 
-      if (pollStorage.getUserStep(userId) > 0) {
+      if (pollStorage.getPoll(userId)) {
         const { channelId, requirements, roles } = pollStorage.getPoll(userId);
 
         pollStorage.deleteMemory(userId);
@@ -341,7 +346,7 @@ abstract class Slashes {
 
         await interaction.reply({
           content: "The current poll creation procedure has been restarted.",
-          ephemeral: interaction.channel.type !== "DM",
+          ephemeral: interaction.inGuild(),
         });
 
         const row = new MessageActionRow().addComponents(
@@ -357,8 +362,8 @@ abstract class Slashes {
         });
       } else {
         interaction.reply({
-          content: "You have no active poll creation process.",
-          ephemeral: interaction.channel.type !== "DM",
+          content: "You don't have an active poll creation process.",
+          ephemeral: interaction.inGuild(),
         });
       }
     } catch (err) {
@@ -370,17 +375,17 @@ abstract class Slashes {
   async cancel(interaction: CommandInteraction) {
     const userId = interaction.user.id;
 
-    if (pollStorage.getUserStep(userId) > 0) {
+    if (pollStorage.getPoll(userId)) {
       pollStorage.deleteMemory(userId);
 
       interaction.reply({
         content: "The current poll creation process has been cancelled.",
-        ephemeral: interaction.channel.type !== "DM",
+        ephemeral: interaction.inGuild(),
       });
     } else {
       interaction.reply({
-        content: "You have no active poll creation process.",
-        ephemeral: interaction.channel.type !== "DM",
+        content: "You don't have an active poll creation process.",
+        ephemeral: interaction.inGuild(),
       });
     }
   }
