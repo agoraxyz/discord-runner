@@ -18,7 +18,7 @@
     "lint-fix": "eslint --fix . --ext .ts,.tsx,.js,.jsx"
   },
   "dependencies": {
-    "@discordx/importer": "^1.1.2",
+    "@discordx/importer": "^1.1.9",
     "@discordx/utilities": "^4.2.4",
     "axios": "^0.26.1",
     "dayjs": "^1.11.1",
