@@ -118,7 +118,10 @@ const messageReactionCommon = async (
             `${config.backendUrl}/poll/results/${pollId}`
           );
 
-          msg.embeds[0].description = await createPollText(poll, results);
+          msg.embeds[0].description = await createPollText(
+            { platformId: reaction.message.guildId, ...poll },
+            results
+          );
 
           msg.edit({ embeds: [msg.embeds[0]] });
         } else {
