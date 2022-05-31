@@ -10,6 +10,45 @@ import logger from "../utils/logger";
 import config from "../config";
 import pollStorage from "./pollStorage";
 
+const getRequirement = (requirement) => {
+  const { id, type, symbol, name, address, chain } = requirement;
+
+  let req: string;
+
+  switch (type) {
+    case "ERC20":
+    case "ERC721":
+    case "ERC1155": {
+      req =
+        name !== "-"
+          ? name
+          : `${address.substring(0, 5)}...${address.substring(38, 42)}`;
+      break;
+    }
+
+    case "COIN": {
+      req = name !== "-" ? name : symbol;
+      break;
+    }
+
+    case "ALLOWLIST": {
+      req = "Allowlist";
+      break;
+    }
+
+    case "FREE": {
+      req = "Free";
+      break;
+    }
+
+    default: {
+      break;
+    }
+  }
+
+  return { id, type, name: req, chain };
+};
+
 const createPollText = async (
   poll: NewPoll | Poll,
   results = undefined
@@ -53,7 +92,11 @@ const createPollText = async (
     (req) => req.id === requirementId
   );
 
-  const requirementText = `This poll is weighted by the "${requirements[0].name}" token on the "${requirements[0].chain}" chain.`;
+  const { type, name, chain } = getRequirement(requirements[0]);
+
+  const requirementText = type.match(/^(ALLOWLIST|FREE)$/)
+    ? ""
+    : `This poll is weighted by the "${name}" token on the "${chain}" chain.\n\n`;
 
   const votersText = `👥 ${numOfVoters} person${
     numOfVoters === 1 ? "" : "s"
@@ -61,7 +104,7 @@ const createPollText = async (
 
   return `${
     description ? `${description}\n\n` : ""
-  }${optionsText}\n\n${dateText}\n\n${requirementText}\n\n${votersText}`;
+  }${optionsText}\n\n${dateText}\n\n${requirementText}${votersText}`;
 };
 
 const createPoll = async (poll: NewPoll): Promise<boolean> => {
@@ -151,4 +194,4 @@ const pollBuildResponse = async (
   return false;
 };
 
-export { createPollText, createPoll, pollBuildResponse };
+export { getRequirement, createPollText, createPoll, pollBuildResponse };

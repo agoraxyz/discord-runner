@@ -10,7 +10,7 @@ import { Discord, Slash, SlashOption } from "discordx";
 import axios from "axios";
 import { join, ping, status } from "../commands";
 import logger from "../utils/logger";
-import { createPoll, pollBuildResponse } from "../api/polls";
+import { createPoll, getRequirement, pollBuildResponse } from "../api/polls";
 import pollStorage from "../api/pollStorage";
 import { createJoinInteractionPayload } from "../utils/utils";
 import { getGuildsOfServer } from "../service";
@@ -198,19 +198,25 @@ abstract class Slashes {
 
           const tokens = guild.roles.flatMap((role) =>
             role.requirements
-              .filter((requirement) => requirement.type === "ERC20")
-              .map((req) => ({
-                label: req.symbol,
-                description: `${req.name} on ${req.chain}`,
-                value: `${req.id}`,
-              }))
+              .filter((requirement) =>
+                requirement.type.match(
+                  /^(ERC(20|721|1155)|COIN|ALLOWLIST|FREE)$/
+                )
+              )
+              .map((req) => {
+                const { id, chain, name } = getRequirement(req);
+
+                return {
+                  label: name,
+                  description: `${name} on ${chain}`,
+                  value: `${id}`,
+                };
+              })
           );
 
           if (tokens.length === 0) {
             interaction.reply({
-              content:
-                "Your guild has no role with appropriate requirements.\n" +
-                "Weighted polls only support ERC20.",
+              content: "Your guild doesn't support polls.",
               ephemeral: true,
             });
 
