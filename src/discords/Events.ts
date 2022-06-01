@@ -6,6 +6,8 @@ import {
   GuildMember,
   Invite,
   Message,
+  MessageActionRow,
+  MessageButton,
   MessageEmbed,
   MessageReaction,
   PartialGuildMember,
@@ -152,10 +154,39 @@ abstract class Events {
     if (
       message.content.toLowerCase().match(/^(#|!|\/)((join)(-guild|)|verify)$/)
     ) {
-      message.reply(
-        "You are close, but not enough.\n" +
-          'Please find the post that has a "join" button and click the button.'
+      logger.verbose(
+        `/join command was used by ${message.author.username}#${message.author.discriminator}`
       );
+
+      const guildRes = await axios.get(
+        `${config.backendUrl}/guild/platformId/${message.guildId}`
+      );
+
+      if (!guildRes) {
+        return;
+      }
+
+      const joinButton = new MessageButton({
+        customId: "join-button",
+        label: `Join ${guildRes.data?.name || "Guild"}`,
+        emoji: "🔗",
+        style: "PRIMARY",
+      });
+
+      const guideButton = new MessageButton({
+        label: "Guide",
+        url: "https://docs.guild.xyz/",
+        style: "LINK",
+      });
+
+      const row = new MessageActionRow({
+        components: [joinButton, guideButton],
+      });
+
+      await message.reply({
+        content: "Click the button below to get your join link.",
+        components: [row],
+      });
     }
   }
 
