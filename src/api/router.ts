@@ -8,7 +8,7 @@ const createRouter = () => {
   router.post(
     "/upgrade",
     validators.bodyDiscordId("guildId"),
-    validators.bodyUserHash("userHash"),
+    validators.bodyDiscordId("platformUserId"),
     validators.bodyDiscordId("roleId"),
     validators.messageValidator,
     controller.upgrade
@@ -17,30 +17,37 @@ const createRouter = () => {
   router.post(
     "/downgrade",
     validators.bodyDiscordId("guildId"),
-    validators.bodyUserHash("userHash"),
+    validators.bodyDiscordId("platformUserId"),
     validators.bodyDiscordId("roleId"),
     validators.messageValidator,
     controller.downgrade
   );
 
+  router.post(
+    "/manageMigratedActions",
+    validators.bodyDiscordId("guildId"),
+    validators.bodyDiscordId("roleId"),
+    validators.messageValidator,
+    controller.manageMigratedActions
+  );
+
   router.get(
     "/invite/:guildId/:inviteChannelId",
     validators.paramDiscordId("guildId"),
-    validators.paramDiscordId("inviteChannelId"),
     controller.getInvite
   );
 
   router.post(
     "/isMember",
     validators.bodyDiscordId("serverId"),
-    validators.bodyUserHash("userHash"),
+    validators.bodyDiscordId("platformUserId"),
     controller.isMember
   );
 
   router.delete(
-    "/kick/:guildId/:userHash",
+    "/kick/:guildId/:platformUserId",
     validators.paramDiscordId("guildId"),
-    validators.paramUserHash("userHash"),
+    validators.paramDiscordId("platformUserId"),
     controller.removeUser
   );
 
@@ -61,6 +68,8 @@ const createRouter = () => {
     "/role",
     validators.bodyDiscordId("serverId"),
     validators.roleNameValidator,
+    validators.isGuardedValidator,
+    validators.entryChannelIdValidator,
     controller.createRole
   );
 
@@ -69,6 +78,9 @@ const createRouter = () => {
     validators.bodyDiscordId("serverId"),
     validators.bodyDiscordId("roleId"),
     validators.roleNameValidator,
+    validators.isGuardedValidator,
+    validators.entryChannelIdValidator,
+    validators.gatedChannelsValidator,
     controller.updateRole
   );
 
@@ -79,29 +91,44 @@ const createRouter = () => {
     controller.deleteRole
   );
 
+  router.post(
+    "/guard",
+    validators.bodyDiscordId("serverId"),
+    validators.entryChannelIdValidator,
+    validators.roleIdsArrayValidator,
+    controller.createGuildGuard
+  );
+
+  router.post(
+    "/resetguard",
+    validators.bodyDiscordId("serverId"),
+    validators.entryChannelIdValidator,
+    controller.resetGuildGuard
+  );
+
   router.get(
     "/isIn/:guildId",
     validators.paramDiscordId("guildId"),
     controller.isIn
   );
 
-  router.get(
-    "/channels/:inviteCode",
-    validators.inviteCodeValidator,
-    controller.channels
+  router.post(
+    "/server/:guildId",
+    validators.paramDiscordId("guildId"),
+    controller.server
   );
 
   router.post(
-    "/channels/sendJoin",
+    "/channels/sendDiscordButton",
     validators.bodyDiscordId("guildId"),
     validators.bodyDiscordId("channelId"),
-    controller.sendJoinButtonToChannel
+    ...validators.buttonMetaData,
+    controller.sendDiscordButton
   );
 
   router.post(
     "/channels/create",
     validators.bodyDiscordId("guildId"),
-    validators.bodyDiscordId("roleId"),
     validators.channelNameValidator,
     controller.createChannel
   );
@@ -115,21 +142,46 @@ const createRouter = () => {
   );
 
   router.get(
-    "/administeredServers/:userHash",
-    validators.paramUserHash("userHash"),
+    "/administeredServers/:platformUserId",
+    validators.paramDiscordId("platformUserId"),
     controller.administeredServers
   );
 
   router.get(
-    "/hashUserId/:userId",
-    validators.paramDiscordId("userId"),
-    controller.hashUserId
+    "/user/:platformUserId",
+    validators.paramDiscordId("platformUserId"),
+    controller.getUser
   );
 
   router.get(
-    "/categories/:inviteCode",
-    validators.inviteCodeValidator,
-    controller.getCategories
+    "/members/:serverId/:roleId",
+    validators.paramDiscordId("roleId"),
+    validators.paramDiscordId("serverId"),
+    controller.getMembersByRole
+  );
+
+  router.post(
+    "/poll",
+    [
+      validators.bodyNumberIdValidator("id"),
+      validators.bodyIdValidator("platformId"),
+      validators.bodyStringValidator("question"),
+      validators.bodyIdValidator("expDate"),
+      validators.bodyArrayValidator("options"),
+    ],
+    controller.createPoll
+  );
+
+  router.get(
+    "/emotes/:guildId",
+    validators.paramDiscordId("guildId"),
+    controller.getEmotes
+  );
+
+  router.get(
+    "/channels/:guildId",
+    validators.paramDiscordId("guildId"),
+    controller.getChannels
   );
 
   return router;

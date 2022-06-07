@@ -1,10 +1,13 @@
 /* eslint no-underscore-dangle: ["error", { "allowAfterThis": true }] */
+import axios from "axios";
+import { importx } from "@discordx/importer";
 import { Intents, MessageComponentInteraction } from "discord.js";
 import { Client } from "discordx";
 import api from "./api/api";
 import { InviteData } from "./api/types";
 import config from "./config";
 import logger from "./utils/logger";
+import { logAxiosResponse } from "./utils/utils";
 
 class Main {
   private static _client: Client;
@@ -15,8 +18,11 @@ class Main {
 
   public static inviteDataCache: Map<string, InviteData>;
 
-  static start(): void {
+  static async start(): Promise<void> {
     api();
+
+    // log all axios responses
+    axios.interceptors.response.use(logAxiosResponse);
 
     this._client = new Client({
       intents: [
@@ -24,11 +30,15 @@ class Main {
         Intents.FLAGS.GUILD_MEMBERS,
         Intents.FLAGS.GUILD_INVITES,
         Intents.FLAGS.GUILD_MESSAGES,
+        Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
         Intents.FLAGS.GUILD_PRESENCES,
         Intents.FLAGS.DIRECT_MESSAGES,
+        Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
       ],
-      classes: [`${__dirname}/discords/*.{js,ts}`],
-      partials: ["CHANNEL"],
+      partials: ["MESSAGE", "CHANNEL", "REACTION"],
+      retryLimit: 3,
+      // rejectOnRateLimit: ["/"],
+      restGlobalRateLimit: 50,
     });
 
     this._client.on("ready", async () => {
@@ -39,8 +49,12 @@ class Main {
     });
 
     this._client.on("messageCreate", (message) => {
-      if (!message.author.bot) {
-        this._client.executeCommand(message);
+      try {
+        if (!message.author.bot) {
+          this._client.executeCommand(message);
+        }
+      } catch (error) {
+        logger.error(`messageCreate error - ${error.message}`);
       }
     });
 
@@ -53,6 +67,8 @@ class Main {
       }
       this._client.executeInteraction(interaction);
     });
+
+    await importx(`${__dirname}/discords/*.{ts,js}`);
 
     this._client.login(config.discordToken);
 

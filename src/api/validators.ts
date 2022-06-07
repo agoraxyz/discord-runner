@@ -1,23 +1,29 @@
 import { body, param } from "express-validator";
 
-const getIdValidatorForParam = (fieldName: string) =>
-  param(fieldName).isString().trim().isLength({ min: 16, max: 20 }).isNumeric();
+const paramIdValidator = (fieldName: string) =>
+  param(fieldName).trim().isNumeric().isLength({ min: 1, max: 64 });
 
-const getIdValidatorForBody = (fieldName: string) =>
-  body(fieldName).isString().trim().isLength({ min: 16, max: 20 }).isNumeric();
+const bodyIdValidator = (fieldName: string) =>
+  body(fieldName).trim().isNumeric().isLength({ min: 1, max: 64 });
 
-const getHashValidatorForParam = (fieldName: string) =>
-  param(fieldName).isString().trim().isLength({ min: 44, max: 64 });
+const bodyStringValidator = (fieldName: string) =>
+  body(fieldName).trim().isString().isLength({ min: 1 });
 
-const getHashValidatorForBody = (fieldName: string) =>
-  body(fieldName).isString().trim().isLength({ min: 44, max: 64 });
+const bodyArrayValidator = (fieldName: string) =>
+  body(fieldName).isArray({ min: 1 });
+
+const bodyNumberIdValidator = (fieldName: string) =>
+  body(fieldName).trim().isNumeric().isLength({ min: 1, max: 64 });
 
 export default {
-  paramDiscordId: getIdValidatorForParam,
-  bodyDiscordId: getIdValidatorForBody,
-  paramUserHash: getHashValidatorForParam,
-  bodyUserHash: getHashValidatorForBody,
-  roleIdsArrayValidator: body("roleIds").isArray({ min: 1 }),
+  paramIdValidator,
+  paramDiscordId: paramIdValidator,
+  bodyIdValidator,
+  bodyNumberIdValidator,
+  bodyStringValidator,
+  bodyArrayValidator,
+  bodyDiscordId: bodyIdValidator,
+  roleIdsArrayValidator: body("roleIds").optional().isArray({ min: 1 }),
   messageValidator: body("message").isString().trim().isLength({ min: 1 }),
   roleNameValidator: body("roleName").isString().trim().isLength({ min: 1 }),
   oldRoleNameValidator: body("oldRoleName")
@@ -34,4 +40,17 @@ export default {
     .isLength({ min: 1 }),
   categoryNameValidator: body("categoryName").isString().trim().optional(),
   isGuildValidator: body("isGuild").trim().isBoolean(),
+  isGuardedValidator: body("isGuarded").optional().isBoolean(),
+  entryChannelIdValidator: body("entryChannelId")
+    .optional()
+    .isLength({ min: 1 }),
+  buttonMetaData: [
+    body("title").trim().optional().isLength({ min: 1 }),
+    body("description").trim().optional().isLength({ min: 1 }),
+    body("button").trim().optional().isLength({ min: 1 }),
+    body("isJoinButton").optional().isBoolean(),
+  ],
+  gatedChannelsValidator: body("gatedChannels.*")
+    .optional()
+    .isLength({ min: 1 }),
 };

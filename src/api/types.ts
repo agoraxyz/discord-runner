@@ -1,13 +1,12 @@
 type ManageRolesParams = {
   guildId: string;
-  userHash: string;
+  platformUserId: string;
   roleId: string;
   message: string;
 };
 
 type CreateChannelParams = {
   guildId: string;
-  roleId: string;
   channelName: string;
 };
 
@@ -53,7 +52,7 @@ type DiscordChannel = {
 type LevelInfo = {
   name: string;
   discordServerId: string;
-  accessedRole: string;
+  accessedRoles: string;
 };
 
 type InviteData = {
@@ -61,7 +60,64 @@ type InviteData = {
   inviteChannelId: string;
 };
 
+type SelectMenuOption = {
+  label: string;
+  description: string;
+  value: string;
+};
+
+type NewPoll = {
+  roles: SelectMenuOption[];
+  requirements: SelectMenuOption[];
+  requirementId: number;
+  channelId: string;
+  question: string;
+  options: string[];
+  reactions: string[];
+  expDate: string;
+};
+
+type Poll = {
+  id: number;
+  question: string;
+  startDate: number;
+  expDate: number;
+  options: string[];
+  reactions: string[];
+};
+
+type Reaction = {
+  name: string;
+  users: string[];
+};
+
+type Vote = {
+  platform: "DISCORD" | "TELEGRAM";
+  pollId: number;
+  platformUserId: string;
+  optionIndex: number;
+};
+type ButtonMetaData = Partial<{
+  title: string;
+  description: string;
+  button: string;
+  isJoinButton: boolean;
+}>;
+
+type Emote = {
+  name: string;
+  id: string;
+  image: string;
+  animated: boolean;
+};
+
+type ChannelObj = {
+  name: string;
+  id: string;
+};
+
 export {
+  ButtonMetaData,
   ManageRolesParams,
   CreateChannelParams,
   DeleteChannelAndRoleParams,
@@ -73,4 +129,11 @@ export {
   DiscordChannel,
   LevelInfo,
   InviteData,
+  SelectMenuOption,
+  NewPoll,
+  Poll,
+  Reaction,
+  Vote,
+  Emote,
+  ChannelObj,
 };

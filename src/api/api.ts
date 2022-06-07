@@ -5,6 +5,7 @@ import router from "./router";
 
 const createApi = () => {
   const api = express();
+  api.disable("x-powered-by");
 
   api.use(express.json());
   api.use(config.api.prefix, router());

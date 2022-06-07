@@ -1,20 +1,21 @@
+/* eslint-disable default-param-last */
 import { AxiosResponse } from "axios";
-import { createHmac } from "crypto";
 import {
   GuildMember,
   DiscordAPIError,
   MessageButton,
   MessageActionRow,
   MessageEmbed,
-  ColorResolvable,
   Guild,
   Collection,
   GuildChannel,
   Permissions,
+  MessageOptions,
+  Role,
 } from "discord.js";
 import { ActionError, ErrorResult, UserResult } from "../api/types";
 import config from "../config";
-import redisClient from "../database";
+import Main from "../Main";
 import { getGuildsOfServer } from "../service";
 import logger from "./logger";
 
@@ -61,73 +62,107 @@ const getErrorResult = (error: Error): ErrorResult => {
 };
 
 const logBackendError = (error) => {
-  if (
-    error.response?.data?.errors?.length > 0 &&
-    error.response?.data?.errors[0]?.msg
-  ) {
-    logger.error(error.response.data.errors[0].msg);
+  const errorData = error.response?.data;
+  const errors = errorData?.errors;
+
+  if (errors?.length > 0 && errors[0]?.msg) {
+    logger.verbose(errors[0].msg);
   } else if (error.response?.data) {
-    logger.error(JSON.stringify(error.response.data));
+    logger.verbose(JSON.stringify(errorData));
   } else {
-    logger.error(JSON.stringify(error));
+    logger.verbose(JSON.stringify(error));
   }
 };
 
 const logAxiosResponse = (res: AxiosResponse<any>) => {
+  const data = JSON.stringify(res.data);
   logger.verbose(
-    `${res.status} ${res.statusText} data:${JSON.stringify(res.data)}`
+    `${res.status} ${res.statusText} data:${
+      data.length > 2000 ? " hidden" : data
+    }`
   );
-};
-
-const getUserHash = async (platformUserId: string): Promise<string> => {
-  const hmac = createHmac(config.hmacAlgorithm, config.hmacSecret);
-  hmac.update(platformUserId);
-  const hashedId = hmac.digest("base64");
-  const user = await redisClient.getAsync(hashedId);
-  if (!user) {
-    redisClient.client.SET(hashedId, platformUserId);
-  }
-  return hashedId;
-};
-
-const getUserDiscordId = async (
-  userHash: string
-): Promise<string | undefined> => {
-  const platformUserId = await redisClient.getAsync(userHash);
-  return platformUserId || undefined;
+  return res;
 };
 
 const isNumber = (value: any) =>
   typeof value === "number" && Number.isFinite(value);
 
-const createJoinInteractionPayload = (
+const createInteractionPayload = (
   guild: {
     name: string;
     urlName: string;
     description: string;
     themeColor: string;
+    imageUrl: string;
+    poaps: any[];
   },
-  messageText: string,
-  buttonText: string
+  title?: string,
+  messageText: string = null,
+  buttonText?: string,
+  isJoinButton: boolean = true
 ) => {
-  const button = new MessageButton({
-    customId: "join-button",
-    label: buttonText || `Join ${guild?.name || "Guild"}`,
+  const lastPoap = guild?.poaps?.pop();
+  const buttonData = isJoinButton
+    ? {
+        customId: "join-button",
+        label: buttonText || `Join ${guild?.name || "Guild"}`,
+        title: title || "Verify your wallet",
+        description:
+          messageText ||
+          guild?.description ||
+          "Join this guild and get your role(s)!",
+        guideUrl: "https://docs.guild.xyz/",
+        thumbnailUrl:
+          "https://cdn.discordapp.com/attachments/950682012866465833/951448318976884826/dc-message.png",
+      }
+    : {
+        customId: "poap-claim-button",
+        label: buttonText || `Claim POAP`,
+        title: title || lastPoap?.fancyId || "Claim your POAP",
+        description:
+          messageText || "Claim this magnificent POAP to your collection!",
+        guideUrl: "https://docs.guild.xyz/guild/guides/poap-distribution",
+        thumbnailUrl:
+          "https://cdn.discordapp.com/attachments/981112277317087293/981897601995657226/poap.png",
+      };
+
+  logger.verbose(`${JSON.stringify(buttonData)}`);
+
+  const buttonBase = new MessageButton({
+    customId: buttonData.customId,
+    label: buttonData.label,
     emoji: "🔗",
     style: "PRIMARY",
   });
-  const row = new MessageActionRow({ components: [button] });
+  const guideButton = new MessageButton({
+    label: "Guide",
+    url: buttonData.guideUrl,
+    style: "LINK",
+  });
+  const row = new MessageActionRow({
+    components: [buttonBase, guideButton],
+  });
+
   return {
     embeds: [
       new MessageEmbed({
-        title: guild?.name || "Guild",
-        url: `${config.guildUrl}/${guild.urlName}`,
-        description: guild.description,
-        color: guild.themeColor as ColorResolvable,
+        title: buttonData.title,
+        url: guild ? `${config.guildUrl}/${guild?.urlName}` : null,
+        description: buttonData.description,
+        color: `#${config.embedColor}`,
+        author: {
+          name: guild?.name || "Guild",
+          iconURL: encodeURI(
+            guild?.imageUrl?.startsWith("https")
+              ? guild?.imageUrl
+              : "https://cdn.discordapp.com/attachments/950682012866465833/951448319169802250/kerek.png"
+          ),
+        },
+        thumbnail: {
+          url: buttonData.thumbnailUrl,
+        },
         footer: {
-          text:
-            messageText ||
-            "Click the button to get access for the desired Guild(s)!",
+          text: "Do not share your private keys. We will never ask for your seed phrase.",
         },
       }),
     ],
@@ -151,8 +186,9 @@ const getJoinReplyMessage = async (
   roleIds: string[],
   guild: Guild,
   userId: string
-) => {
-  let message: string;
+): Promise<MessageOptions> => {
+  let message: MessageOptions;
+  logger.verbose(`getJoinReply - ${roleIds} ${guild.id} ${userId}`);
   if (roleIds && roleIds.length !== 0) {
     const channelIds = getAccessedChannelsByRoles(guild, roleIds).map(
       (c) => c.id
@@ -162,22 +198,169 @@ const getJoinReplyMessage = async (
       const roleNames = guild.roles.cache
         .filter((role) => roleIds.some((roleId) => roleId === role.id))
         .map((role) => role.name);
-      message = `✅ You got the \`${roleNames.join(", ")}\` role(s).`;
+      message = {
+        content: `✅ You got the \`${roleNames.join(", ")}\` role${
+          roleNames.length > 1 ? "s" : ""
+        }.`,
+      };
     } else if (channelIds.length === 1) {
-      message = `✅ You got access to this channel: <#${channelIds[0]}>`;
+      message = {
+        content: `✅ You got access to this channel: <#${channelIds[0]}>`,
+      };
     } else {
-      message = `✅ You got access to these channels:\n${channelIds
-        .map((c: string) => `<#${c}>`)
-        .join("\n")}`;
+      message = {
+        content: `✅ You got access to these channels:\n${channelIds
+          .map((c: string) => `<#${c}>`)
+          .join("\n")}`,
+      };
     }
-  } else if (roleIds) {
-    message = "❌ You don't have access to any guilds in this server.";
+  } else if (roleIds && roleIds[0] !== "") {
+    message = {
+      content: "❌ You don't have access to any guilds in this server.",
+    };
   } else {
     const guildsOfServer = await getGuildsOfServer(guild.id);
-    message = `${config.guildUrl}/${guildsOfServer[0].urlName}/?discordId=${userId}`;
+
+    const button = new MessageButton({
+      label: "Join",
+      style: "LINK",
+      url: `${config.guildUrl}/${guildsOfServer[0].urlName}/?discordId=${userId}`,
+    });
+
+    return {
+      components: [new MessageActionRow({ components: [button] })],
+      content: `This is **your** join link. Do **NOT** share it with anyone!`,
+    };
   }
 
   return message;
+};
+
+const denyViewEntryChannelForRole = async (
+  role: Role,
+  entryChannelId: string
+) => {
+  try {
+    const entryChannel = role.guild.channels.cache.get(
+      entryChannelId
+    ) as GuildChannel;
+    if (
+      !!entryChannel &&
+      !entryChannel.permissionOverwrites.cache
+        .get(role.id)
+        ?.deny.has(Permissions.FLAGS.VIEW_CHANNEL)
+    ) {
+      await entryChannel.permissionOverwrites.create(role.id, {
+        VIEW_CHANNEL: false,
+      });
+    }
+  } catch (error) {
+    logger.warn(error);
+    throw new Error(
+      `Entry channel does not exists. (server: ${role.guild.id}, channel: ${entryChannelId})`
+    );
+  }
+};
+
+const getChannelsByCategoryWithRoles = (guild: Guild) => {
+  // sort channels by categoryId
+  const channelsByCategoryId = guild.channels.cache.reduce<
+    Map<string, { id: string; name: string; roles: string[] }[]>
+  >((acc, ch) => {
+    // skip if not text or news channel
+    if (ch.type !== "GUILD_TEXT" && ch.type !== "GUILD_NEWS") {
+      return acc;
+    }
+
+    // handle where threre is not parent
+    const parentId = ch.parent?.id || "-";
+
+    // create parentId key if not exists
+    if (!acc.has(parentId)) {
+      acc.set(parentId, []);
+    }
+
+    // filter for roles that have explicit permission overwrites
+    const roles = guild.roles.cache
+      .filter((role) =>
+        ch.permissionOverwrites.cache
+          .get(role.id)
+          ?.allow.has(Permissions.FLAGS.VIEW_CHANNEL)
+      )
+      .map((role) => role.id);
+
+    // add channel info to the category's array
+    acc.get(parentId).push({
+      id: ch.id,
+      name: ch.name,
+      roles,
+    });
+    return acc;
+  }, new Map());
+
+  // add categoryName and convert to array
+  const channelsByCategory = [];
+  channelsByCategoryId.forEach((v, k) => {
+    channelsByCategory.push({
+      id: k,
+      name: k === "-" ? "-" : guild.channels.cache.get(k).name,
+      channels: v,
+    });
+  });
+
+  return channelsByCategory;
+};
+
+const updateAccessedChannelsOfRole = (
+  serverId: string,
+  roleId: string,
+  channelIds: string[],
+  isGuarded: boolean,
+  entryChannelId: string
+) => {
+  const shouldHaveAccess = new Set(channelIds);
+
+  const channels = Main.Client.guilds.cache
+    .get(serverId)
+    ?.channels.cache.filter((channel) => !channel.isThread()) as Collection<
+    string,
+    GuildChannel
+  >;
+
+  if (isGuarded) {
+    shouldHaveAccess.delete(entryChannelId);
+    channels.delete(entryChannelId);
+  }
+
+  const [channelsToAllow, channelsToDeny] = channels.partition(
+    (channel) =>
+      shouldHaveAccess.has(channel.id) ||
+      shouldHaveAccess.has(channel.parentId) ||
+      (channel.type !== "GUILD_CATEGORY" &&
+        !channel.parent &&
+        shouldHaveAccess.has("-"))
+  );
+
+  return Promise.all([
+    ...channelsToDeny.map((channelToDenyAccessTo) =>
+      channelToDenyAccessTo.permissionOverwrites.edit(roleId, {
+        VIEW_CHANNEL: null,
+      })
+    ),
+    ...channelsToAllow.map((channelToAllowAccessTo) =>
+      channelToAllowAccessTo.permissionOverwrites.edit(roleId, {
+        VIEW_CHANNEL: true,
+      })
+    ),
+    ...channelsToAllow.map((channelToAllowAccessTo) =>
+      channelToAllowAccessTo.permissionOverwrites.edit(
+        Main.Client.guilds.cache.get(serverId).roles.everyone.id,
+        {
+          VIEW_CHANNEL: false,
+        }
+      )
+    ),
+  ]);
 };
 
 export {
@@ -185,10 +368,11 @@ export {
   getErrorResult,
   logBackendError,
   logAxiosResponse,
-  getUserHash,
-  getUserDiscordId,
   isNumber,
-  createJoinInteractionPayload,
+  createInteractionPayload,
   getJoinReplyMessage,
   getAccessedChannelsByRoles,
+  denyViewEntryChannelForRole,
+  getChannelsByCategoryWithRoles,
+  updateAccessedChannelsOfRole,
 };
