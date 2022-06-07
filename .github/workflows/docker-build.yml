@@ -1,9 +1,14 @@
 name: Branch based docker build and publish
 
+# Language: typescript
+# Version: 2.0.0
+# Runner: self-hosted
+# Visibility: private
+
 on:
   push:
     branches:
-     - '*' 
+      - "*"
     # branches-ignore:
     #  - 'main'
     tags:
@@ -14,63 +19,9 @@ env:
   DIVE_VERSION: v0.10
 
 jobs:
-  scanning:
-    name: GitGuardian scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0 # fetch all history so multiple commits can be scanned
-      - name: GitGuardian scan
-        uses: GitGuardian/gg-shield-action@master
-        env:
-          GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
-          GITHUB_PUSH_BASE_SHA: ${{ github.event.base }}
-          GITHUB_PULL_BASE_SHA:  ${{ github.event.pull_request.base.sha }}
-          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
-
-  test:
-    name: Test container build
-    needs: scanning
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      
-      - name: Setup buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          install: true
-  
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        id: docker-image-cache
-        with:
-          path: /tmp/.buildx-cache
-          # Key is named differently to avoid collision
-          key: ${{ runner.os }}-multi-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-multi-buildx
-
-      - name: Run test build
-        uses: docker/build-push-action@v2
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
-          context: .
-          file: Dockerfile
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
-
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache      
-  
-  push:
-    name: Build and publish the conatiner image
-    needs: test
-    runs-on: ubuntu-latest
+  build:
+    name: Build and publish the container image
+    runs-on: self-hosted
     if: github.event_name == 'push' || github.event.pull_request.merged == true
     steps:
       - uses: actions/checkout@v2
@@ -79,15 +30,14 @@ jobs:
         uses: docker/setup-buildx-action@v1
         with:
           install: true
-      
-      - name: Cache Docker layers
-        uses: actions/cache@v2
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v2.3.0
         with:
-          path: /tmp/.buildx-cache
-          # Key is named differently to avoid collision
-          key: ${{ runner.os }}-multi-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-multi-buildx
+          cosign-release: "v1.8.0"
+
+      - name: Install Syft
+        run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Get current repository name
         run: echo "REPOSITORY_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")" >> $GITHUB_ENV
@@ -95,20 +45,16 @@ jobs:
 
       - name: Determine tag name
         run: |
-          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$REPOSITORY_NAME
-          IMAGE_ID_2=${{ secrets.DOCKER_REPO }}/${{ secrets.DOCKER_LOGIN_NAME }}/$REPOSITORY_NAME
+          IMAGE_ID=${{ secrets.DOCKER_REPO }}/${{ secrets.DOCKER_LOGIN_NAME }}/$REPOSITORY_NAME
 
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          IMAGE_ID_2=$(echo $IMAGE_ID_2 | tr '[A-Z]' '[a-z]')
 
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          [ "$VERSION" == "master" ] && VERSION=latest
-          
+
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_ENV
-          echo "IMAGE_ID_2=$IMAGE_ID_2" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
- 
+
       - name: Build container image
         uses: docker/build-push-action@v2
         with:
@@ -117,34 +63,92 @@ jobs:
           file: Dockerfile
           load: true
           tags: app:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
 
-      - name: Check container image with dive
-        run: |
-          docker pull wagoodman/dive:$DIVE_VERSION
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock --mount type=bind,source="$(pwd)"/.dive-ci,target=/.dive-ci,readonly wagoodman/dive:$DIVE_VERSION --ci app:latest --ci-config /.dive-ci
-
-      - name: Login to Github Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: docker.pkg.github.com
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
       - name: Login to External Container Registry
         uses: docker/login-action@v1
         with:
           registry: ${{ secrets.DOCKER_REPO }}
           username: ${{ secrets.DOCKER_LOGIN_NAME }}
           password: ${{ secrets.DOCKER_API_TOKEN }}
-      
+
+      - name: Check container image with dive
+        run: |
+          docker pull wagoodman/dive:$DIVE_VERSION
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock --mount type=bind,source="$(pwd)"/.github/.dive-ci,target=/.dive-ci,readonly wagoodman/dive:$DIVE_VERSION --ci app:latest --ci-config /.dive-ci
+
       - name: Tag the container images
         run: |
           docker tag app:latest $IMAGE_ID:$VERSION
-          docker tag app:latest $IMAGE_ID_2:$VERSION
 
-      - name: Push container image to Github Container Registry 
-        run: docker push $IMAGE_ID:$VERSION
-     
+      - name: Setup Cosign Private Key
+        run: echo "$KEY" > cosign.key
+        shell: bash
+        env:
+          KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+
       - name: Push container image to External Container Registry
-        run: docker push $IMAGE_ID_2:$VERSION
+        run: docker push $IMAGE_ID:$VERSION
+
+      - name: Sign container image
+        run: |
+          cosign sign --key cosign.key -a REPO=$REPOSITORY_NAME -a TAG=$VERSION -a SIGNER=GitHub -a DEVELOPER=${{ github.actor }} -a TIMESTAMP=$(date --iso-8601="seconds") $IMAGE_ID:$VERSION
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+
+      - name: Generate SBOM, sign and push
+        run: |
+          syft attest --output syft-json --key cosign.key $IMAGE_ID:$VERSION > sbom_attestation.json
+          cosign attach attestation --attestation sbom_attestation.json $IMAGE_ID:$VERSION
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+
+      - name: Wipe cosign.key
+        run: |
+          openssl rand -hex 1024 > cosign.key
+          rm cosign.key
+
+      - name: Archive sbom results
+        uses: actions/upload-artifact@v3
+        with:
+          name: SBOM-ATTESTATION
+          path: sbom_attestation.json
+
+  scanners:
+    name: Scanners
+    runs-on: self-hosted
+    needs: build
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    steps:
+
+      - name: Setup Cosign Public Key
+        run: echo "$KEY" > cosign.pub
+        shell: bash
+        env:
+          KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
+      
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v2.3.0
+        with:
+          cosign-release: "v1.8.0"
+
+      - name: Install Grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Download a single artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: SBOM-ATTESTATION
+
+      - name: Scan SBOM attestation file
+        run: |
+          grype sbom_attestation.json --key cosign.pub --only-fixed -o table -f medium --file grype_report.txt
+        continue-on-error: true
+
+      - name: Archive grype results
+        uses: actions/upload-artifact@v3
+        with:
+          name: GRYPE_REPORT
+          path: grype_report.txt
+
+
