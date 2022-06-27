@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@discordx/importer": "^1.1.2",
-    "@discordx/utilities": "^4.2.4",
+    "@discordx/utilities": "^4.3.2",
     "axios": "^0.26.1",
     "dayjs": "^1.11.1",
     "discord.js": "^13.6.0",
