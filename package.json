@@ -22,7 +22,7 @@
     "@discordx/utilities": "^4.2.4",
     "axios": "^0.26.1",
     "dayjs": "^1.11.1",
-    "discord.js": "^13.6.0",
+    "discord.js": "^13.8.0",
     "discordx": "^9.5.2",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
