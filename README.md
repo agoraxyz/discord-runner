@@ -1,22 +1,17 @@
-<h1 align="center">Medousa</h1>
-
 <p align="center">
-	<img src="docs/img/medousa.png" width="70%" />
+	<img src="docs/img/guild_bot.png" width="200px" />
 </p>
 
-## Description
+Guild bot is part of the [Guild project](https://docs.guild.xyz/guild).
+The purpose of this bot is to provide security for guilds by managing users.
 
-Medousa is part of the [Agora project](https://github.com/AgoraSpaceDAO). She
-is a ruthless greek goddess who works as a Discord bot and does all the dirty
-work from removing intruders to providing extra privileges to premium users.
-
-- [Website](https://agora.space)
+- [Website](https://guild.xyz)
 - [Changelog](./CHANGELOG.md)
 - [License](./LICENSE)
 
 ## Getting started
 
-Install dependencies:
+Install the dependencies:
 
 ```bash
 npm install
@@ -24,22 +19,20 @@ npm install
 yarn install
 ```
 
-Create a new file called .env and add the following environment variables:
+Create a new file called _.env_ and add the following environment variables:
 
 ```bash
+BACKEND_URL=https://api.agora.space
+PORT=8990
 DISCORD_TOKEN=KJlrEsMLydUXvJaaSRZDSmvD.pLQtsV.FJUJliPzZjgPhujkuhkOiBroWBk
 PREFIX="!"
-PORT=8990
-EMBED_COLOR="6366f1"
-BACKEND_URL="https://api.agora.space/"
+EMBED_COLOR=6366f1
 REDIS_HOST=redis://@redis-discord:6380
-HMAC_ALGORITHM=
-HMAC_SECRET=
 ```
 
-Create another file called redis.env:
+Create another file called _redis.env_:
 
-```
+```bash
 ALLOW_EMPTY_PASSWORD=no
 REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
 REDIS_PASSWORD=
@@ -58,6 +51,9 @@ yarn dev
 npm run build && npm run prod
 # or
 yarn build && yarn prod
+
+# inside a Docker container
+docker-compose up --build
 ```
 
 ## Documentation
