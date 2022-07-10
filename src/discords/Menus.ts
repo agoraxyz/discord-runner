@@ -1,4 +1,5 @@
 /* eslint-disable class-methods-use-this */
+
 import { SelectMenuInteraction } from "discord.js";
 import { Discord, SelectMenuComponent } from "discordx";
 import pollStorage from "../api/pollStorage";
